@@ -1,0 +1,86 @@
+DEMO_GUIDE.txt
+
+Demo Purpose:
+This is a demo of a Production Management web app built with React and Tailwind CSS. It showcases a complete CRUD application with routing, data persistence, responsive design, and dark mode support.
+
+How to Start the App:
+1. Ensure Node.js is installed on your system.
+2. Run 'npm install' in the project directory to install dependencies.
+3. Run 'npm run dev' to start the development server.
+4. Open your browser and navigate to the provided URL (usually http://localhost:5173).
+
+Basic Navigation:
+- Login Page: Enter your email, select a role (Admin/Operator), and choose or create a company.
+- Dashboard: View overview statistics and load demo data.
+- Projects: Add, edit, and delete projects.
+- Sites: Add, edit, and delete sites.
+- Trucks: Add, edit, and delete trucks.
+- Capture: Enter daily production data with validation.
+- Reports: View all captured data in a table format.
+Use the sidebar menu to navigate between different sections of the app.
+
+Where Data is Stored:
+All data is stored locally in the browser's LocalStorage. No backend server is required. Data persists between browser sessions but is specific to the current browser and device.
+
+LOGIN DETAILS
+=============
+
+Demo Login Accounts:
+- Admin: admin@demo.com
+- Manager: manager@demo.com
+- Site Manager: site@demo.com
+
+Password for all accounts: 123456
+
+COMPANIES
+==========
+
+Available Companies:
+- Alpha Logistics
+- Titan Mining Transport
+
+Total seeded companies: 2
+
+PROJECTS
+========
+
+Total seeded projects: 3
+
+Example Site Targets:
+- Site A = 40 Loads
+- Site B = 55 Loads
+- Site C = 30 Loads
+
+Resources:
+- Coal
+- Chrome
+- Platinum
+
+TRUCKS
+======
+
+Total seeded trucks: 20
+
+TEST FLOW
+=========
+
+Demo Walkthrough:
+1. Login as Admin (admin@demo.com, password: 123456)
+2. View dashboard and load demo data
+3. Open Projects page to see project management
+4. Open Trucks page to see truck management
+5. Login as Site Manager (site@demo.com, password: 123456)
+6. Capture daily loads on the Capture page
+7. Login as Manager (manager@demo.com, password: 123456)
+8. View reports on the Reports page
+
+Additional seeded data: 5 Sites, 30 Daily Logs
+
+RESET APP
+=========
+
+If data breaks or you want to start fresh:
+1. Open browser developer tools (F12)
+2. Go to Application/Storage > Local Storage
+3. Clear all localStorage entries for the app
+4. Refresh the app page
