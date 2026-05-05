@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -16,7 +17,7 @@ import { loadDemoData } from './utils/demoData'
 import { getData } from './utils/localStorage'
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null)
+  const { currentUser, logout, loading } = useAuth()
 
   useEffect(() => {
     // Auto-load demo data on first visit or version change
@@ -25,27 +26,23 @@ function App() {
     if (demoVersion !== CURRENT_VERSION) {
       loadDemoData()
     }
-
-    // Load current user
-    const user = getData('currentUser')
-    setCurrentUser(user)
   }, [])
 
-  const handleLogin = (user) => {
-    setCurrentUser(user)
-  }
-
-  const handleLogout = () => {
-    setCurrentUser(null)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   if (!currentUser) {
-    return <Login onLogin={handleLogin} />
+    return <Login />
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Layout currentUser={currentUser} onLogout={handleLogout} />}>
+      <Route path="/" element={<Layout currentUser={currentUser} onLogout={logout} />}>
         <Route index element={<Dashboard currentUser={currentUser} />} />
         <Route path="dashboard" element={<Dashboard currentUser={currentUser} />} />
         <Route path="admin-data" element={<AdminDataManagement currentUser={currentUser} />} />

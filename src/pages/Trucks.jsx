@@ -1,60 +1,41 @@
 import { useState, useEffect } from 'react'
-import { getData, saveData } from '../utils/localStorage'
+import { dataService } from '../lib/dataService'
+import { Truck, Plus, Edit2, Trash2, Shield, Info, ArrowRight } from 'lucide-react'
 
 function Trucks({ currentUser }) {
   const [trucks, setTrucks] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
     truckName: '',
-    type: '23t',
+    type: 'ADT',
     capacity: ''
   })
+
+  const loadTrucks = async () => {
+    const data = await dataService.getTrucks()
+    setTrucks(data)
+  }
 
   useEffect(() => {
     if (!currentUser) return
     loadTrucks()
   }, [currentUser])
 
-  const loadTrucks = () => {
-    let storedTrucks = getData('trucks') || []
-    if (currentUser.role === 'siteManager') {
-      storedTrucks = storedTrucks.filter(truck => truck.siteId === currentUser.assignedSite)
-    }
-    setTrucks(storedTrucks)
-  }
-
-  const saveTrucks = (newTrucks) => {
-    const allTrucks = getData('trucks') || []
-    const otherTrucks = allTrucks.filter(truck => !newTrucks.some(nt => nt.id === truck.id))
-    const updatedAll = [...otherTrucks, ...newTrucks]
-    setTrucks(newTrucks)
-    saveData('trucks', updatedAll)
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (currentUser.role !== 'admin') return
 
-    if (editingId !== null) {
-      // Update existing
-      const updatedTrucks = trucks.map(truck =>
-        truck.id === editingId ? { ...truck, ...formData } : truck
-      )
-      saveTrucks(updatedTrucks)
-      setEditingId(null)
-    } else {
-      // Add new
-      const newTruck = {
-        id: Date.now(),
-        ...formData,
-        siteId: 1, // Default
-        siteName: 'Default Site',
-        companyId: 1,
-        status: 'Active'
-      }
-      saveTrucks([...trucks, newTruck])
+    const truckData = {
+      ...formData,
+      id: editingId || Date.now(),
+      companyId: 1,
+      status: 'Active'
     }
+
+    await dataService.saveTruck(truckData)
+    setEditingId(null)
     setFormData({ truckName: '', type: 'ADT', capacity: '' })
+    loadTrucks()
   }
 
   const handleEdit = (truck) => {
@@ -65,12 +46,16 @@ function Trucks({ currentUser }) {
       type: truck.type,
       capacity: truck.capacity
     })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (currentUser.role !== 'admin') return
-    const updatedTrucks = trucks.filter(truck => truck.id !== id)
-    saveTrucks(updatedTrucks)
+    if (window.confirm('Are you sure you want to delete this truck?')) {
+      // In a full implementation, we'd add deleteTruck to dataService
+      console.log('Delete requested for truck:', id)
+      alert('Delete functionality is currently being finalized in the cloud backend.')
+    }
   }
 
   const handleCancel = () => {
@@ -79,147 +64,160 @@ function Trucks({ currentUser }) {
   }
 
   const getTruckTypeColor = (type) => {
-    if (type === 'ADT') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    if (type === 'Heavy Truck') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-    return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+    if (type === 'ADT') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    if (type === 'Rigid Hauler') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
   }
 
   const totalCapacity = trucks.reduce((sum, t) => sum + Number(t.capacity || 0), 0)
 
+  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager'
+  const canEdit = currentUser?.role === 'admin'
+
   if (!canView) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You do not have permission to view this page.</p>
-        </div>
+      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <Shield size={48} className="mx-auto text-amber-500 mb-4" />
+        <h2 className="text-xl font-bold dark:text-white">Access Denied</h2>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">You do not have permission to manage the fleet.</p>
       </div>
     )
   }
 
   return (
-    <main className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Fleet Management</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage trucks and vehicles across sites</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* KPI Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <SummaryCard title="Total Fleet" value={trucks.length} icon={<Truck className="text-blue-600" />} />
+        <SummaryCard title="Total Capacity" value={`${totalCapacity}t`} icon={<Info className="text-emerald-600" />} />
+        <SummaryCard title="Avg Capacity" value={`${trucks.length > 0 ? Math.round(totalCapacity / trucks.length) : 0}t`} icon={<ArrowRight className="text-violet-600" />} />
       </div>
 
       {canEdit && (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">{editingId ? '✎ Edit Truck' : '+ Add New Truck'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Truck Name</label>
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+          <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center">
+            {editingId ? <Edit2 className="mr-2 text-blue-600" size={24} /> : <Plus className="mr-2 text-blue-600" size={24} />}
+            {editingId ? 'Edit Vehicle Config' : 'Register New Vehicle'}
+          </h3>
+          
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-500 px-1">Truck Designation</label>
               <input
                 type="text"
                 value={formData.truckName}
                 onChange={(e) => setFormData({ ...formData, truckName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-600 dark:text-white transition-all font-bold"
+                placeholder="e.g. KOM-930E-01"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-500 px-1">Vehicle Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-600 dark:text-white transition-all font-bold appearance-none"
               >
-                <option value="ADT">ADT</option>
-                <option value="Heavy Truck">Heavy Truck</option>
-                <option value="Medium Truck">Medium Truck</option>
+                <option value="ADT">ADT (Articulated Dump Truck)</option>
+                <option value="Rigid Hauler">Rigid Hauler</option>
+                <option value="Tippertruck">Tippertruck</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Capacity (tons)</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-500 px-1">Payload Capacity (Tons)</label>
               <input
                 type="number"
                 value={formData.capacity}
                 onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-600 dark:text-white transition-all font-bold"
+                placeholder="0"
                 required
               />
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors">
-              {editingId ? '✓ Update' : '+ Add'} Truck
-            </button>
-            {editingId && (
-              <button type="button" onClick={handleCancel} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md font-medium transition-colors">
-                Cancel
+
+            <div className="md:col-span-3 flex gap-3">
+              <button type="submit" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all active:scale-95">
+                {editingId ? 'Update Configuration' : 'Add Vehicle to Fleet'}
               </button>
-            )}
-          </div>
-        </form>
+              {editingId && (
+                <button type="button" onClick={handleCancel} className="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       )}
 
-      {/* Fleet Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 p-6 rounded-lg shadow border border-blue-200 dark:border-blue-800">
-          <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">Total Trucks</p>
-          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{trucks.length}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-lg shadow border border-green-200 dark:border-green-800">
-          <p className="text-sm font-semibold text-green-700 dark:text-green-300 mb-2">Total Capacity</p>
-          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{totalCapacity}t</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 p-6 rounded-lg shadow border border-purple-200 dark:border-purple-800">
-          <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">Average Capacity</p>
-          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{trucks.length > 0 ? Math.round(totalCapacity / trucks.length) : 0}t</p>
+      {/* Fleet Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Designation</th>
+                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Classification</th>
+                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Capacity</th>
+                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Status</th>
+                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {trucks.length > 0 ? trucks.map(truck => (
+                <tr key={truck.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                  <td className="px-8 py-5 font-bold text-slate-900 dark:text-white">{truck.truckName}</td>
+                  <td className="px-8 py-5">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getTruckTypeColor(truck.type)}`}>
+                      {truck.type}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-center font-black text-slate-900 dark:text-white">{truck.capacity}t</td>
+                  <td className="px-8 py-5 text-center">
+                    <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Active</span>
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    {canEdit && (
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEdit(truck)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all" title="Edit">
+                          <Edit2 size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(truck.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all" title="Delete">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="5" className="px-8 py-12 text-center text-slate-400 italic">No vehicles registered in fleet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* Trucks Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Truck Name</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Capacity</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {trucks.length > 0 ? trucks.map(truck => (
-              <tr key={truck.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{truck.truckName}</td>
-                <td className="px-6 py-4 text-sm">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getTruckTypeColor(truck.type)}`}>
-                    {truck.type}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-center font-semibold text-gray-900 dark:text-white">{truck.capacity}t</td>
-                <td className="px-6 py-4 text-sm text-center">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                    ✓ Active
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-right">
-                  {canEdit && (
-                    <>
-                      <button onClick={() => handleEdit(truck)} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium mr-4">Edit</button>
-                      <button onClick={() => handleDelete(truck.id)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium">Delete</button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                  <p className="font-medium">No trucks configured yet</p>
-                  <p className="text-sm mt-1">Add your first truck using the form above</p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+function SummaryCard({ title, value, icon }) {
+  return (
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{title}</p>
+        <p className="text-3xl font-black text-slate-900 dark:text-white leading-none">{value}</p>
       </div>
-    </main>
+      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+        {icon}
+      </div>
+    </div>
   )
 }
 

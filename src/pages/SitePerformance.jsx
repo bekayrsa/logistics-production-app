@@ -1,53 +1,63 @@
 import { useState, useEffect } from 'react'
-import { getData } from '../utils/localStorage'
+import { dataService } from '../lib/dataService'
 
 function SitePerformance({ currentUser }) {
   const [sitePerformance, setSitePerformance] = useState([])
 
   useEffect(() => {
-    if (!currentUser) return
-    let sites = getData('sites') || []
-    if (currentUser.role === 'siteManager') {
-      sites = sites.filter(site => site.id === currentUser.assignedSite)
-    }
-    const production = getData('production') || []
+    const loadPerformance = async () => {
+      if (!currentUser) return
+      
+      const [sitesData, productionData] = await Promise.all([
+        dataService.getSites(),
+        dataService.getProduction()
+      ])
 
-    // Get today's date
-    const today = new Date().toISOString().split('T')[0]
-
-    // Calculate performance for each site
-    const performance = sites.map(site => {
-      const todayProduction = production.find(p => p.siteId === site.id && p.date === today)
-
-      if (todayProduction) {
-        return {
-          id: site.id,
-          siteName: site.siteName,
-          mineName: site.mineName,
-          resource: site.resource,
-          target: site.dailyTarget,
-          actual: todayProduction.actual,
-          variance: todayProduction.variance,
-          status: getPerformanceStatus(todayProduction.variance),
-          statusColor: getStatusColor(todayProduction.variance)
-        }
-      } else {
-        // No data for today
-        return {
-          id: site.id,
-          siteName: site.siteName,
-          mineName: site.mineName,
-          resource: site.resource,
-          target: site.dailyTarget,
-          actual: 0,
-          variance: -100,
-          status: 'No Data',
-          statusColor: 'bg-gray-100 text-gray-800'
-        }
+      let sites = sitesData
+      if (currentUser.role === 'siteManager') {
+        sites = sites.filter(site => Number(site.id) === Number(currentUser.assignedSite))
       }
-    })
+      const production = productionData
 
-    setSitePerformance(performance)
+      // Get today's date
+      const today = new Date().toISOString().split('T')[0]
+
+      // Calculate performance for each site
+      const performance = sites.map(site => {
+        const todayProduction = production.find(p => Number(p.siteId) === Number(site.id) && p.date === today)
+
+        if (todayProduction) {
+          return {
+            id: site.id,
+            siteName: site.siteName,
+            mineName: site.mineName,
+            resource: site.resource,
+            target: site.dailyTarget,
+            actual: todayProduction.actual,
+            variance: todayProduction.variance,
+            status: getPerformanceStatus(todayProduction.variance),
+            statusColor: getStatusColor(todayProduction.variance)
+          }
+        } else {
+          // No data for today
+          return {
+            id: site.id,
+            siteName: site.siteName,
+            mineName: site.mineName,
+            resource: site.resource,
+            target: site.dailyTarget,
+            actual: 0,
+            variance: -100,
+            status: 'No Data',
+            statusColor: 'bg-gray-100 text-gray-800'
+          }
+        }
+      })
+
+      setSitePerformance(performance)
+    }
+
+    loadPerformance()
   }, [currentUser])
 
   const getPerformanceStatus = (variance) => {

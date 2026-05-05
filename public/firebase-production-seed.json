@@ -1,0 +1,192 @@
+{
+  "sites": {
+    "1": {
+      "id": 1,
+      "siteName": "North Pit Alpha",
+      "mineId": 1,
+      "mineName": "Alpha Mine",
+      "resource": "Coal",
+      "dailyTarget": 1200,
+      "status": "Active",
+      "companyId": 1
+    },
+    "2": {
+      "id": 2,
+      "siteName": "South Pit Bravo",
+      "mineId": 1,
+      "mineName": "Alpha Mine",
+      "resource": "Chrome",
+      "dailyTarget": 800,
+      "status": "Active",
+      "companyId": 1
+    },
+    "3": {
+      "id": 3,
+      "siteName": "East Ridge Gamma",
+      "mineId": 2,
+      "mineName": "Gamma Complex",
+      "resource": "Platinum",
+      "dailyTarget": 1500,
+      "status": "Active",
+      "companyId": 1
+    }
+  },
+  "trucks": {
+    "truck_001": {
+      "id": "truck_001",
+      "truckName": "CAT-785-01",
+      "type": "Rigid Hauler",
+      "capacity": 150,
+      "status": "Active",
+      "companyId": 1
+    },
+    "truck_002": {
+      "id": "truck_002",
+      "truckName": "KOM-930-02",
+      "type": "Rigid Hauler",
+      "capacity": 290,
+      "status": "Active",
+      "companyId": 1
+    },
+    "truck_003": {
+      "id": "truck_003",
+      "truckName": "BEL-751-03",
+      "type": "ADT",
+      "capacity": 40,
+      "status": "Active",
+      "companyId": 1
+    },
+    "truck_004": {
+      "id": "truck_004",
+      "truckName": "BEL-751-04",
+      "type": "ADT",
+      "capacity": 40,
+      "status": "Active",
+      "companyId": 1
+    },
+    "truck_005": {
+      "id": "truck_005",
+      "truckName": "VOV-A40-05",
+      "type": "ADT",
+      "capacity": 38,
+      "status": "Active",
+      "companyId": 1
+    }
+  },
+  "mines": {
+    "1": {
+      "id": 1,
+      "name": "Alpha Mine",
+      "operation": "Opencast",
+      "location": "Mpumalanga, SA",
+      "companyId": 1
+    },
+    "2": {
+      "id": 2,
+      "name": "Gamma Complex",
+      "operation": "Underground",
+      "location": "North West, SA",
+      "companyId": 1
+    }
+  },
+  "users": {
+    "admin_miningsense_com": {
+      "id": "admin_miningsense_com",
+      "name": "System Admin",
+      "email": "admin@miningsense.com",
+      "role": "admin",
+      "companyId": 1
+    },
+    "manager_miningsense_com": {
+      "id": "manager_miningsense_com",
+      "name": "Operations Manager",
+      "email": "manager@miningsense.com",
+      "role": "manager",
+      "companyId": 1
+    },
+    "capture1_miningsense_com": {
+      "id": "capture1_miningsense_com",
+      "name": "Site Manager 1",
+      "email": "capture1@miningsense.com",
+      "role": "siteManager",
+      "assignedSite": 1,
+      "companyId": 1
+    },
+    "capture2_miningsense_com": {
+      "id": "capture2_miningsense_com",
+      "name": "Site Manager 2",
+      "email": "capture2@miningsense.com",
+      "role": "siteManager",
+      "assignedSite": 2,
+      "companyId": 1
+    }
+  },
+  "projects": {
+    "1": {
+      "id": 1,
+      "projectName": "Phase 1 Extraction",
+      "mine": "Alpha Mine",
+      "status": "Active",
+      "companyId": 1
+    },
+    "2": {
+      "id": 2,
+      "projectName": "Tailings Recovery",
+      "mine": "Gamma Complex",
+      "status": "Active",
+      "companyId": 1
+    }
+  },
+  "captures": {
+    "seed_cap_001": {
+      "id": "seed_cap_001",
+      "siteId": 1,
+      "siteName": "North Pit Alpha",
+      "truckId": "truck_001",
+      "truckName": "CAT-785-01",
+      "loads": 5,
+      "tons": 750,
+      "date": "2026-05-05",
+      "timestamp": 1714932000000
+    },
+    "seed_cap_002": {
+      "id": "seed_cap_002",
+      "siteId": 2,
+      "siteName": "South Pit Bravo",
+      "truckId": "truck_003",
+      "truckName": "BEL-751-03",
+      "loads": 10,
+      "tons": 400,
+      "date": "2026-05-05",
+      "timestamp": 1714935600000
+    }
+  },
+  "production": {
+    "seed_prod_001": {
+      "id": "seed_prod_001",
+      "date": "2026-05-05",
+      "siteId": 1,
+      "siteName": "North Pit Alpha",
+      "trucksUsed": 1,
+      "loadsPerTruck": 5,
+      "totalTons": 750,
+      "target": 1200,
+      "actual": 750,
+      "variance": -38,
+      "status": "Below Target"
+    },
+    "seed_prod_002": {
+      "id": "seed_prod_002",
+      "date": "2026-05-05",
+      "siteId": 2,
+      "siteName": "South Pit Bravo",
+      "trucksUsed": 1,
+      "loadsPerTruck": 10,
+      "totalTons": 400,
+      "target": 800,
+      "actual": 400,
+      "variance": -50,
+      "status": "Below Target"
+    }
+  }
+}

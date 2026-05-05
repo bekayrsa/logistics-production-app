@@ -1,55 +1,61 @@
 import { useState, useEffect } from 'react'
-import { getData } from '../utils/localStorage'
+import { dataService } from '../lib/dataService'
 
 function Mines({ currentUser }) {
   const [mineSummaries, setMineSummaries] = useState([])
 
   useEffect(() => {
-    const mines = getData('mines') || []
-    const sites = getData('sites') || []
-    const trucks = getData('trucks') || []
-    const production = getData('production') || []
+    const loadMinesData = async () => {
+      const mines = await dataService.getMines()
+      const sites = await dataService.getSites()
+      const trucks = await dataService.getTrucks()
+      const production = await dataService.getProduction()
 
-    // Calculate summary for each mine
-    const summaries = mines.map(mine => {
-      // Total Sites for this mine
-      const mineSites = sites.filter(s => s.mineId === mine.id)
-      const totalSites = mineSites.length
+      // Calculate summary for each mine
+      const summaries = mines.map(mine => {
+        // Total Sites for this mine
+        const mineSites = sites.filter(s => s.mineId === mine.id)
+        const totalSites = mineSites.length
 
-      // Total Trucks assigned to this mine
-      const mineTrucks = trucks.filter(t => {
-        return mineSites.some(ms => ms.id === t.siteId)
+        // Total Trucks assigned to this mine
+        const mineTrucks = trucks.filter(t => {
+          return mineSites.some(ms => ms.id === t.siteId)
+        })
+        const totalTrucks = mineTrucks.length
+
+        // Total Production (tons) for this mine
+        const mineProduction = production.filter(p => {
+          return mineSites.some(ms => ms.id === p.siteId)
+        })
+        const totalTons = mineProduction.reduce((sum, p) => sum + (Number(p.totalTons) || 0), 0)
+
+        // Average Target Achievement %
+        let avgAchievement = 0
+        if (mineProduction.length > 0) {
+          const totalVariance = mineProduction.reduce((sum, p) => sum + (Number(p.variance) || 0), 0)
+          avgAchievement = Math.round(totalVariance / mineProduction.length)
+        }
+
+        return {
+          id: mine.id,
+          name: mine.name,
+          operation: mine.operation,
+          location: mine.location,
+          totalSites,
+          totalTrucks,
+          totalTons,
+          avgAchievement,
+          status: avgAchievement >= 0 ? 'On Track' : 'Below Target'
+        }
       })
-      const totalTrucks = mineTrucks.length
 
-      // Total Production (tons) for this mine
-      const mineProduction = production.filter(p => {
-        return mineSites.some(ms => ms.id === p.siteId)
-      })
-      const totalTons = mineProduction.reduce((sum, p) => sum + p.totalTons, 0)
+      setMineSummaries(summaries)
+    }
 
-      // Average Target Achievement %
-      let avgAchievement = 0
-      if (mineProduction.length > 0) {
-        const totalVariance = mineProduction.reduce((sum, p) => sum + p.variance, 0)
-        avgAchievement = Math.round(totalVariance / mineProduction.length)
-      }
-
-      return {
-        id: mine.id,
-        name: mine.name,
-        operation: mine.operation,
-        location: mine.location,
-        totalSites,
-        totalTrucks,
-        totalTons,
-        avgAchievement,
-        status: avgAchievement >= 0 ? 'On Track' : 'Below Target'
-      }
-    })
-
-    setMineSummaries(summaries)
-  }, [])
+    if (currentUser?.role === 'admin') {
+      loadMinesData()
+    }
+  }, [currentUser])
 
   const getStatusColor = (status) => {
     return status === 'On Track' ? 'text-green-600' : 'text-red-600'

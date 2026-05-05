@@ -1,0 +1,95 @@
+{
+  "users": {
+    "admin_at_miningsense_com": {
+      "id": "admin_at_miningsense_com",
+      "name": "System Admin",
+      "email": "admin@miningsense.com",
+      "password": "admin123",
+      "role": "admin",
+      "company": "Mining Logistics Pro"
+    },
+    "manager_at_miningsense_com": {
+      "id": "manager_at_miningsense_com",
+      "name": "Shift Manager",
+      "email": "manager@miningsense.com",
+      "password": "admin123",
+      "role": "manager",
+      "company": "Mining Logistics Pro"
+    },
+    "site1_at_miningsense_com": {
+      "id": "site1_at_miningsense_com",
+      "name": "Site Manager 1",
+      "email": "site1@miningsense.com",
+      "password": "admin123",
+      "role": "siteManager",
+      "assignedSite": 101,
+      "company": "Mining Logistics Pro"
+    },
+    "site2_at_miningsense_com": {
+      "id": "site2_at_miningsense_com",
+      "name": "Site Manager 2",
+      "email": "site2@miningsense.com",
+      "password": "admin123",
+      "role": "siteManager",
+      "assignedSite": 102,
+      "company": "Mining Logistics Pro"
+    },
+    "site3_at_miningsense_com": {
+      "id": "site3_at_miningsense_com",
+      "name": "Site Manager 3",
+      "email": "site3@miningsense.com",
+      "password": "admin123",
+      "role": "siteManager",
+      "company": "Mining Logistics Pro"
+    }
+  },
+  "sites": {
+    "101": {
+      "id": 101,
+      "siteName": "Coal Pit A",
+      "mineName": "Witbank North",
+      "resource": "Coal",
+      "dailyTarget": 1200,
+      "status": "Active"
+    },
+    "102": {
+      "id": 102,
+      "siteName": "Chrome East",
+      "mineName": "Steelpoort Mine",
+      "resource": "Chrome",
+      "dailyTarget": 850,
+      "status": "Active"
+    }
+  },
+  "trucks": {
+    "T01": {
+      "id": "T01",
+      "truckName": "Volvo FMX 440 (T01)",
+      "type": "ADT",
+      "capacity": 40,
+      "status": "Active"
+    },
+    "T02": {
+      "id": "T02",
+      "truckName": "CAT 777 (T02)",
+      "type": "Hauler",
+      "capacity": 90,
+      "status": "Active"
+    },
+    "T03": {
+      "id": "T03",
+      "truckName": "Scania G440 (T03)",
+      "type": "Tipper",
+      "capacity": 32,
+      "status": "Active"
+    }
+  },
+  "projects": {
+    "P01": {
+      "id": "P01",
+      "projectName": "Coal Haulage Phase 1",
+      "mine": "Witbank North",
+      "status": "Active"
+    }
+  }
+}
