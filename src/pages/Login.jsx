@@ -14,7 +14,7 @@ function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    
+
     try {
       await login(email, password)
     } catch (err) {
@@ -43,20 +43,20 @@ function Login() {
       {/* Visual Side */}
       <div className="hidden lg:flex lg:w-1/2 bg-blue-600 relative overflow-hidden items-center justify-center p-12">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-900 opacity-90" />
-        <div className="absolute inset-0 opacity-20" 
-             style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-        
+        <div className="absolute inset-0 opacity-20"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+
         <div className="relative z-10 text-white max-w-lg">
           <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl">
             <Shield size={40} className="text-white" />
           </div>
           <h1 className="text-6xl font-black tracking-tighter leading-none mb-6">
-            Logistics <br/>Production <br/>Management
+            Logistics <br />Production <br />Management
           </h1>
           <p className="text-xl text-blue-100 font-medium leading-relaxed">
             Real-time operational tracking, site performance monitoring, and secure production reporting for modern mining fleets.
           </p>
-          
+
           <div className="mt-12 grid grid-cols-2 gap-8 border-t border-white/10 pt-12">
             <div>
               <p className="text-4xl font-black">24/7</p>
@@ -84,16 +84,15 @@ function Login() {
           </div>
 
           <div className="mb-8 flex items-center justify-between">
-            <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-2xl border text-xs font-black uppercase tracking-widest ${
-              APP_MODE === 'demo' 
-                ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-500' 
+            <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-2xl border text-xs font-black uppercase tracking-widest ${APP_MODE === 'demo'
+                ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-500'
                 : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-500'
-            }`}>
+              }`}>
               {APP_MODE === 'demo' ? <Database size={14} /> : <Shield size={14} />}
               <span>{APP_MODE === 'demo' ? 'System in Demo Mode' : 'Secured with Firebase'}</span>
             </div>
-            
-            <button 
+
+            <button
               onClick={() => {
                 const nextMode = APP_MODE === 'demo' ? 'production' : 'demo';
                 localStorage.setItem('app_mode', nextMode);
@@ -205,12 +204,12 @@ function Login() {
                         if (signupErr.code !== 'auth/email-already-in-use') throw signupErr;
                         console.log('Admin already exists, proceeding with database seeding...');
                       }
-                      
+
                       // Import the seed data
                       const response = await fetch('/firebase-production-seed.json');
                       const seedData = await response.json();
                       await dataService.seedDatabase(seedData);
-                      
+
                       alert('Production environment initialized and seeded! You can now log in.');
                     } catch (err) {
                       console.error(err);
