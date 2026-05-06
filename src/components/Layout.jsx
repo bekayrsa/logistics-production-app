@@ -69,7 +69,7 @@ function Layout({ currentUser, onLogout, children }) {
   }
 
   const handleSwitchToDemo = () => {
-    localStorage.setItem('APP_MODE', 'demo')
+    localStorage.setItem('app_mode', 'demo')
     window.location.reload()
   }
 

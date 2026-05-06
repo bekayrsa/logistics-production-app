@@ -4,8 +4,8 @@
     ".write": "auth != null",
     "users": {
       ".indexOn": ["email", "role"],
-      "$uid": {
-        ".write": "root.child('users').child(auth.token.email.replace('.', '_')).child('role').val() == 'admin' || auth.token.email.replace('.', '_') == $uid"
+      "$user_id": {
+        ".write": "auth.token.email == 'admin@miningsense.com' || auth.token.email.replace('@', '_').replace('.', '_') == $user_id"
       }
     },
     "sites": {

@@ -30,9 +30,17 @@ export const AuthProvider = ({ children }) => {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
+            // Standardized safeId: replace @ and . with _
             const safeId = user.email.replace(/[@.]/g, '_');
             const userData = await readData(`users/${safeId}`);
-            setCurrentUser({ ...user, ...userData });
+            
+            if (userData) {
+              setCurrentUser({ ...user, ...userData });
+            } else {
+              // User exists in Auth but not in Database record yet
+              console.warn("User record not found in database for ID:", safeId);
+              setCurrentUser(user);
+            }
           } catch (error) {
             console.error("Error fetching user data:", error);
             setCurrentUser(user);
