@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
-            const safeId = user.email.replace(/\./g, '_');
+            const safeId = user.email.replace(/[@.]/g, '_');
             const userData = await readData(`users/${safeId}`);
             setCurrentUser({ ...user, ...userData });
           } catch (error) {

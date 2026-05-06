@@ -207,7 +207,7 @@ function Login() {
                       }
 
                       // Import the seed data
-                      const response = await fetch('/firebase-production-seed.json');
+                      const response = await fetch('/firebase-live-seed.json');
                       const seedData = await response.json();
                       await dataService.seedDatabase(seedData);
 

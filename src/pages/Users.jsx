@@ -32,7 +32,7 @@ function Users({ currentUser }) {
     
     const userData = {
       ...formData,
-      id: isEditing ? editingUser.id : (formData.email.replace(/\./g, '_')),
+      id: isEditing ? editingUser.id : (formData.email.replace(/[@.]/g, '_')),
       companyId: 1
     }
 
