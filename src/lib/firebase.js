@@ -25,12 +25,19 @@ let auth;
 let database;
 let analytics;
 
+let secondaryApp;
+let secondaryAuth;
+
 if (hasFirebaseConfig) {
   try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     database = getDatabase(app);
     
+    // Create secondary app for user management (so admin doesn't get logged out)
+    secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+    secondaryAuth = getAuth(secondaryApp);
+
     // Analytics is only supported in browser environments
     isSupported().then(supported => {
       if (supported) analytics = getAnalytics(app);
@@ -42,4 +49,4 @@ if (hasFirebaseConfig) {
   console.warn("Firebase credentials missing or invalid. App will only function in Demo Mode.");
 }
 
-export { auth, database, analytics };
+export { auth, database, analytics, secondaryAuth };
