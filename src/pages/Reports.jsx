@@ -21,6 +21,9 @@ function Reports({ currentUser }) {
         if (currentUser.role === 'siteManager') {
           storedCaptures = storedCaptures.filter(capture => Number(capture.siteId) === Number(currentUser.assignedSite))
         }
+        
+        // Explicitly sort by timestamp descending
+        storedCaptures.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
         setCaptures(storedCaptures)
       } catch (err) {
         console.error('Failed to load reports:', err)
@@ -161,7 +164,7 @@ function Reports({ currentUser }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {captures.length > 0 ? captures.slice().reverse().map(capture => (
+              {captures.length > 0 ? captures.map(capture => (
                 <tr key={capture.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                   <td className="px-8 py-5 font-bold text-slate-900 dark:text-white">{capture.siteName}</td>
                   <td className="px-8 py-5 text-slate-600 dark:text-slate-400 font-medium">{capture.truckName}</td>

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { APP_MODE } from '../config';
 import { Shield, Database, Lock, Mail, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { loadDemoData } from '../utils/demoData';
+import { dataService } from '../lib/dataService';
 function Login() {
   const { login, signup } = useAuth()
   const [email, setEmail] = useState('')

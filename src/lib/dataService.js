@@ -19,7 +19,7 @@ export const dataService = {
       return localDb.getData('sites') || []
     } else {
       const data = await firebaseDb.readData('sites')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -45,7 +45,7 @@ export const dataService = {
       return localDb.getData('trucks') || []
     } else {
       const data = await firebaseDb.readData('trucks')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -71,7 +71,7 @@ export const dataService = {
       return localDb.getData('captures') || []
     } else {
       const data = await firebaseDb.readData('captures')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -103,7 +103,7 @@ export const dataService = {
       return localDb.getData('production') || []
     } else {
       const data = await firebaseDb.readData('production')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -130,7 +130,7 @@ export const dataService = {
       return localDb.getData('submittedDays') || []
     } else {
       const data = await firebaseDb.readData('submittedDays')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -160,7 +160,7 @@ export const dataService = {
       const capturesRef = ref(database, 'captures')
       const unsubscribe = onValue(capturesRef, (snapshot) => {
         const data = snapshot.val() || {}
-        callback(Object.values(data))
+        callback(Object.values(data).filter(Boolean))
       })
       return unsubscribe
     }
@@ -176,7 +176,7 @@ export const dataService = {
       const prodRef = ref(database, 'production')
       const unsubscribe = onValue(prodRef, (snapshot) => {
         const data = snapshot.val() || {}
-        callback(Object.values(data))
+        callback(Object.values(data).filter(Boolean))
       })
       return unsubscribe
     }
@@ -192,7 +192,87 @@ export const dataService = {
       const subRef = ref(database, 'submittedDays')
       const unsubscribe = onValue(subRef, (snapshot) => {
         const data = snapshot.val() || {}
-        callback(Object.values(data))
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  subscribeToSites: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('sites') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'sites')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  subscribeToTrucks: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('trucks') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'trucks')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  subscribeToUsers: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('users') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'users')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  subscribeToProjects: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('projects') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'projects')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  subscribeToMines: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('mines') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'mines')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
       })
       return unsubscribe
     }
@@ -204,7 +284,7 @@ export const dataService = {
       return localDb.getData('users') || []
     } else {
       const data = await firebaseDb.readData('users')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -230,7 +310,7 @@ export const dataService = {
       return localDb.getData('projects') || []
     } else {
       const data = await firebaseDb.readData('projects')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -256,7 +336,7 @@ export const dataService = {
       return localDb.getData('mines') || []
     } else {
       const data = await firebaseDb.readData('mines')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
@@ -282,7 +362,7 @@ export const dataService = {
       return localDb.getData('comments') || []
     } else {
       const data = await firebaseDb.readData('comments')
-      return data ? Object.values(data) : []
+      return data ? Object.values(data).filter(Boolean) : []
     }
   },
 

@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
+import { APP_MODE } from '../config'
+import { secondaryAuth } from '../lib/firebase'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
 
 function Users({ currentUser }) {
   const [users, setUsers] = useState([])
@@ -15,14 +18,12 @@ function Users({ currentUser }) {
   const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager'
   const canEdit = currentUser?.role === 'admin'
 
-  const loadUsers = async () => {
-    const allUsers = await dataService.getUsers()
-    setUsers(allUsers)
-  }
-
   useEffect(() => {
     if (!canView) return
-    loadUsers()
+    const unsubscribe = dataService.subscribeToUsers((data) => {
+      setUsers(data)
+    })
+    return () => unsubscribe()
   }, [currentUser])
 
   const handleSubmit = async (e) => {
@@ -35,12 +36,28 @@ function Users({ currentUser }) {
       companyId: 1
     }
 
+    if (!isEditing && APP_MODE !== 'demo' && secondaryAuth) {
+      try {
+        // We use the secondary Auth instance so we don't log out the current admin
+        await createUserWithEmailAndPassword(secondaryAuth, formData.email, "welcome123");
+      } catch (err) {
+        console.error("Failed to create user in Firebase Auth:", err);
+        // Note: You could display an error message here, but we'll still save 
+        // to the DB in case they are already in Auth or we want them tracked anyway.
+        if (err.code === 'auth/email-already-in-use') {
+          alert('User email is already in use in Firebase Authentication.');
+        } else {
+          alert('Failed to create user in Firebase Authentication: ' + err.message);
+          return; // Stop here so we don't add to Realtime DB if Auth failed
+        }
+      }
+    }
+
     await dataService.saveUser(userData)
     
     setIsEditing(false)
     setEditingUser(null)
     setFormData({ name: '', email: '', role: 'siteManager', assignedSite: '' })
-    loadUsers()
   }
 
   const handleEdit = (user) => {

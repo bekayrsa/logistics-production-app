@@ -23,24 +23,26 @@ function AdminDataManagement({ currentUser }) {
   const [editData, setEditData] = useState({})
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0])
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const allCaptures = await dataService.getCaptures()
-      const filteredCaptures = allCaptures.filter(c => c.date === filterDate)
-      setCaptures(filteredCaptures)
-
-      const allProduction = await dataService.getProduction()
-      const filteredProduction = allProduction.filter(p => p.date === filterDate)
-      setProduction(filteredProduction)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    loadData()
-  }, [filterDate, activeTab])
+    setLoading(true)
+    const unsubCaptures = dataService.subscribeToCaptures((allCaptures) => {
+      const filtered = allCaptures
+        .filter(c => c.date === filterDate)
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      setCaptures(filtered)
+      setLoading(false)
+    })
+
+    const unsubProduction = dataService.subscribeToProduction((allProduction) => {
+      const filtered = allProduction.filter(p => p.date === filterDate)
+      setProduction(filtered)
+    })
+
+    return () => {
+      unsubCaptures()
+      unsubProduction()
+    }
+  }, [filterDate])
 
   const handleEditCapture = (capture) => {
     setEditingId(capture.id)
@@ -71,7 +73,6 @@ function AdminDataManagement({ currentUser }) {
     if (window.confirm('Are you sure you want to delete this capture? This will affect today\'s production totals.')) {
       try {
         await dataService.deleteCapture(id)
-        loadData()
       } catch (err) {
         alert('Failed to delete capture: ' + err.message)
       }
@@ -300,13 +301,9 @@ function SitesDatabase() {
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
-  const loadSites = async () => {
-    const data = await dataService.getSites()
-    setSites(data)
-  }
-
   useEffect(() => {
-    loadSites()
+    const unsub = dataService.subscribeToSites((data) => setSites(data))
+    return () => unsub()
   }, [])
 
   const handleEdit = (site) => {
@@ -317,14 +314,12 @@ function SitesDatabase() {
   const handleSave = async () => {
     await dataService.saveSite(editData)
     setEditingId(null)
-    loadSites()
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this site? This action cannot be undone.')) {
       try {
         await dataService.deleteSite(id)
-        loadSites()
       } catch (err) {
         alert('Failed to delete site: ' + err.message)
       }
@@ -450,13 +445,9 @@ function TrucksDatabase() {
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
-  const loadTrucks = async () => {
-    const data = await dataService.getTrucks()
-    setTrucks(data)
-  }
-
   useEffect(() => {
-    loadTrucks()
+    const unsub = dataService.subscribeToTrucks((data) => setTrucks(data))
+    return () => unsub()
   }, [])
 
   const handleEdit = (truck) => {
@@ -467,14 +458,12 @@ function TrucksDatabase() {
   const handleSave = async () => {
     await dataService.saveTruck(editData)
     setEditingId(null)
-    loadTrucks()
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this truck? This action cannot be undone.')) {
       try {
         await dataService.deleteTruck(id)
-        loadTrucks()
       } catch (err) {
         alert('Failed to delete truck: ' + err.message)
       }
@@ -600,13 +589,9 @@ function UsersDatabase() {
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
-  const loadUsers = async () => {
-    const data = await dataService.getUsers()
-    setUsers(data)
-  }
-
   useEffect(() => {
-    loadUsers()
+    const unsub = dataService.subscribeToUsers((data) => setUsers(data))
+    return () => unsub()
   }, [])
 
   const handleEdit = (user) => {
@@ -617,14 +602,12 @@ function UsersDatabase() {
   const handleSave = async () => {
     await dataService.saveUser(editData)
     setEditingId(null)
-    loadUsers()
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user? Access to the console will be revoked immediately.')) {
       try {
         await dataService.deleteUser(id)
-        loadUsers()
       } catch (err) {
         alert('Failed to delete user: ' + err.message)
       }
@@ -740,13 +723,9 @@ function ProjectsDatabase() {
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
-  const loadProjects = async () => {
-    const data = await dataService.getProjects()
-    setProjects(data)
-  }
-
   useEffect(() => {
-    loadProjects()
+    const unsub = dataService.subscribeToProjects((data) => setProjects(data))
+    return () => unsub()
   }, [])
 
   const handleEdit = (project) => {
@@ -757,14 +736,12 @@ function ProjectsDatabase() {
   const handleSave = async () => {
     await dataService.saveProject(editData)
     setEditingId(null)
-    loadProjects()
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
         await dataService.deleteProject(id)
-        loadProjects()
       } catch (err) {
         alert('Failed to delete project: ' + err.message)
       }
