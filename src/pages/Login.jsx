@@ -202,8 +202,12 @@ function Login() {
                       try {
                         await signup('admin@miningsense.com', 'admin123');
                       } catch (signupErr) {
-                        if (signupErr.code !== 'auth/email-already-in-use') throw signupErr;
-                        console.log('Admin already exists, proceeding with database seeding...');
+                        if (signupErr.code === 'auth/email-already-in-use') {
+                          console.log('Admin already exists, logging in to seed...');
+                          await login('admin@miningsense.com', 'admin123');
+                        } else {
+                          throw signupErr;
+                        }
                       }
 
                       // Import the seed data
