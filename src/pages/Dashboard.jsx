@@ -18,6 +18,16 @@ import {
   FileText,
   MessageSquare
 } from 'lucide-react'
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  Cell
+} from 'recharts'
 
 function Dashboard({ currentUser }) {
   const [stats, setStats] = useState({
@@ -85,14 +95,38 @@ function Dashboard({ currentUser }) {
         }
 
         const today = new Date().toISOString().split('T')[0]
-        const todayProd = history.filter(h => h.date === today)
         
-        // Calculate Stats
-        const totalTons = todayProd.reduce((sum, h) => sum + h.actual, 0)
-        const totalTarget = todayProd.reduce((sum, h) => sum + h.target, 0)
+        // 4. Calculate Live Site Performance from Captures + Sites
+        // We iterate through all available sites and aggregate captures for each
+        const livePerformance = availableSites.map(site => {
+          const siteCaptures = captures.filter(c => 
+            c.date === today && 
+            Number(c.siteId) === Number(site.id)
+          )
+          const actual = siteCaptures.reduce((sum, c) => sum + Number(c.tons || 0), 0)
+          const target = Number(site.dailyTarget || 0)
+          
+          return {
+            id: site.id,
+            siteName: site.siteName,
+            actual,
+            target,
+            variance: target > 0 ? Math.round(((actual - target) / target) * 100) : 0,
+            status: actual >= target ? 'On Target' : 'Below Target'
+          }
+        })
+
+        // Filter live performance if a specific site is selected
+        const filteredPerformance = selectedSite === 'all' 
+          ? livePerformance 
+          : livePerformance.filter(p => Number(p.id) === Number(selectedSite))
+
+        // Calculate Stats based on live data
+        const totalTons = filteredPerformance.reduce((sum, p) => sum + p.actual, 0)
+        const totalTarget = filteredPerformance.reduce((sum, p) => sum + p.target, 0)
         
-        const onTarget = todayProd.filter(h => h.actual >= h.target).length
-        const belowTarget = todayProd.filter(h => h.actual < h.target).length
+        const onTarget = filteredPerformance.filter(p => p.actual >= p.target && p.target > 0).length
+        const belowTarget = filteredPerformance.filter(p => p.actual < p.target && p.target > 0).length
         const trucksUsed = [...new Set(captures.filter(c => c.date === today).map(c => c.truckId))].length
         
         const progress = totalTarget > 0 ? Math.round((totalTons / totalTarget) * 100) : 0
@@ -105,7 +139,7 @@ function Dashboard({ currentUser }) {
           todayProgress: progress
         })
 
-        // Group history by date for trend analysis
+        // Group history by date for trend analysis (using submitted production history)
         const groupedHistory = history.reduce((acc, curr) => {
           if (!acc[curr.date]) acc[curr.date] = 0
           acc[curr.date] += curr.actual
@@ -121,7 +155,7 @@ function Dashboard({ currentUser }) {
 
         setProductionHistory(sortedHistory)
         setRecentCaptures(sortedCaptures.slice(0, 5)) 
-        setSitePerformance(todayProd)
+        setSitePerformance(filteredPerformance)
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err)
       } finally {
@@ -142,10 +176,32 @@ function Dashboard({ currentUser }) {
     }
   }, [currentUser, selectedSite])
 
+  if (!currentUser) return null
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (availableSites.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-12 text-center bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-[2rem] flex items-center justify-center text-amber-600 mx-auto mb-8">
+          <AlertTriangle size={40} />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">No Sites Assigned</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium mb-8">
+          Your account has not been assigned to any production sites yet. Please contact your administrator to gain access to site data.
+        </p>
+        <button 
+          onClick={() => navigate('/settings')}
+          className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs"
+        >
+          Go to Settings
+        </button>
       </div>
     )
   }
@@ -274,6 +330,51 @@ function Dashboard({ currentUser }) {
               )) : (
                 <div className="p-12 text-center text-slate-400 italic">No production recorded for today yet.</div>
               )}
+            </div>
+          </div>
+
+          {/* Production Trend Chart */}
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center">
+              <TrendingUp className="mr-3 text-blue-600" size={24} />
+              7-Day Production Trend
+            </h3>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={productionHistory}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} 
+                    tickFormatter={(str) => {
+                      const date = new Date(str);
+                      return date.toLocaleDateString([], { weekday: 'short' });
+                    }}
+                  />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                  <Tooltip 
+                    cursor={{ fill: 'transparent' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl">
+                            <p className="text-[10px] font-black uppercase text-slate-400 mb-1">{payload[0].payload.date}</p>
+                            <p className="text-sm font-black text-blue-600">{payload[0].value.toLocaleString()} tons</p>
+                          </div>
+                        )
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="tons" radius={[4, 4, 0, 0]}>
+                    {productionHistory.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === productionHistory.length - 1 ? '#2563eb' : '#94a3b8'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
