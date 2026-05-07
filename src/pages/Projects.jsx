@@ -1,55 +1,41 @@
 import { useState, useEffect } from 'react'
-import { getData, saveData } from '../utils/localStorage'
+import { dataService } from '../lib/dataService'
+import { Briefcase, Plus, Edit2, Trash2, Shield, Layers, Calendar, Target } from 'lucide-react'
 
 function Projects({ currentUser }) {
   const [projects, setProjects] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
     projectName: '',
-    mine: '',
+    mineId: '',
+    mineName: '',
     status: 'Active'
   })
+  const [mines, setMines] = useState([])
 
   useEffect(() => {
     if (!currentUser) return
-    if (currentUser.role === 'siteManager') return // No access
-    loadProjects()
+    if (currentUser.role === 'siteManager') return
+    const unsubProjects = dataService.subscribeToProjects(setProjects)
+    const unsubMines = dataService.subscribeToMines(setMines)
+    return () => {
+      unsubProjects()
+      unsubMines()
+    }
   }, [currentUser])
 
-  const loadProjects = () => {
-    const storedProjects = getData('projects') || []
-    setProjects(storedProjects)
-  }
-
-  const saveProjects = (newProjects) => {
-    const allProjects = getData('projects') || []
-    const otherProjects = allProjects.filter(project => !newProjects.some(np => np.id === project.id))
-    const updatedAll = [...otherProjects, ...newProjects]
-    setProjects(newProjects)
-    saveData('projects', updatedAll)
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (currentUser.role !== 'admin') return
 
-    if (editingId !== null) {
-      // Update existing
-      const updatedProjects = projects.map(project =>
-        project.id === editingId ? { ...project, ...formData } : project
-      )
-      saveProjects(updatedProjects)
-      setEditingId(null)
-    } else {
-      // Add new
-      const newProject = {
-        id: Date.now(),
-        ...formData,
-        companyId: 1
-      }
-      saveProjects([...projects, newProject])
+    const projectData = {
+      ...formData,
+      id: editingId || Date.now()
     }
-    setFormData({ projectName: '', mine: '', status: 'Active' })
+
+    await dataService.saveProject(projectData)
+    setEditingId(null)
+    setFormData({ projectName: '', mineId: '', mineName: '', status: 'Active' })
   }
 
   const handleEdit = (project) => {
@@ -57,20 +43,22 @@ function Projects({ currentUser }) {
     setEditingId(project.id)
     setFormData({
       projectName: project.projectName,
-      mine: project.mine,
+      mineId: project.mineId || '',
+      mineName: project.mineName || project.mine || '',
       status: project.status
     })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (currentUser.role !== 'admin') return
-    const updatedProjects = projects.filter(project => project.id !== id)
-    saveProjects(updatedProjects)
-  }
-
-  const handleCancel = () => {
-    setEditingId(null)
-    setFormData({ projectName: '', mine: '', status: 'Active' })
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        await dataService.deleteProject(id)
+      } catch (err) {
+        alert('Failed to delete project: ' + err.message)
+      }
+    }
   }
 
   const canEdit = currentUser?.role === 'admin'
@@ -78,141 +66,156 @@ function Projects({ currentUser }) {
 
   if (!canView) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You do not have permission to view this page.</p>
+      <div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in duration-700">
+        <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-3xl flex items-center justify-center text-rose-600 mb-6">
+          <Shield size={40} />
         </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Access Denied</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">Strategic project data is restricted to executive management and administrators.</p>
       </div>
     )
   }
 
-  const getStatusColor = (status) => {
-    if (status === 'Active') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    if (status === 'Completed') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+  const getStatusStyle = (status) => {
+    if (status === 'Active') return 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800'
+    if (status === 'Completed') return 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
+    return 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800'
   }
 
-  const activeProjects = projects.filter(p => p.status === 'Active').length
-  const completedProjects = projects.filter(p => p.status === 'Completed').length
-
   return (
-    <main className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Projects & Initiatives</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage strategic projects across mining operations</p>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <SummaryCard 
+          label="Total Initiatives" 
+          value={projects.length} 
+          icon={<Layers className="text-blue-600" />} 
+          color="blue"
+        />
+        <SummaryCard 
+          label="Active Projects" 
+          value={projects.filter(p => p.status === 'Active').length} 
+          icon={<Target className="text-emerald-600" />} 
+          color="emerald"
+        />
+        <SummaryCard 
+          label="Completed" 
+          value={projects.filter(p => p.status === 'Completed').length} 
+          icon={<Calendar className="text-violet-600" />} 
+          color="violet"
+        />
       </div>
 
       {canEdit && (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">{editingId ? '✎ Edit Project' : '+ Add New Project'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Name</label>
-              <input
-                type="text"
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+          <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-3">
+            {editingId ? <Edit2 className="text-blue-600" /> : <Plus className="text-blue-600" />}
+            {editingId ? 'Modify Project' : 'Initiate New Project'}
+          </h3>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Project Identity</label>
+              <input 
+                required
                 value={formData.projectName}
-                onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+                onChange={e => setFormData(prev => ({ ...prev, projectName: e.target.value }))}
+                placeholder="e.g. Expansion Phase II"
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mine / Operation</label>
-              <input
-                type="text"
-                value={formData.mine}
-                onChange={(e) => setFormData({ ...formData, mine: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Linked Operation</label>
+              <select 
                 required
-              />
+                value={formData.mineId}
+                onChange={e => {
+                  const mine = mines.find(m => String(m.id) === e.target.value)
+                  setFormData(prev => ({ ...prev, mineId: e.target.value, mineName: mine ? mine.name : '' }))
+                }}
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white appearance-none"
+              >
+                <option value="">Select Mine</option>
+                {mines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-              <select
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Lifecycle Status</label>
+              <select 
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white appearance-none"
               >
                 <option value="Active">Active</option>
                 <option value="Completed">Completed</option>
                 <option value="On Hold">On Hold</option>
               </select>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors">
-              {editingId ? '✓ Update' : '+ Add'} Project
-            </button>
-            {editingId && (
-              <button type="button" onClick={handleCancel} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md font-medium transition-colors">
-                Cancel
+            <div className="lg:col-span-3 flex justify-end gap-4 pt-4">
+              {editingId && (
+                <button 
+                  type="button"
+                  onClick={() => { setEditingId(null); setFormData({ projectName: '', mineId: '', mineName: '', status: 'Active' }) }}
+                  className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-500 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button 
+                type="submit"
+                className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
+              >
+                {editingId ? 'Update Initiative' : 'Deploy Project'}
               </button>
-            )}
-          </div>
-        </form>
+            </div>
+          </form>
+        </div>
       )}
 
-      {/* Projects Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 p-6 rounded-lg shadow border border-blue-200 dark:border-blue-800">
-          <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">Total Projects</p>
-          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{projects.length}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-lg shadow border border-green-200 dark:border-green-800">
-          <p className="text-sm font-semibold text-green-700 dark:text-green-300 mb-2">Active Projects</p>
-          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{activeProjects}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 p-6 rounded-lg shadow border border-purple-200 dark:border-purple-800">
-          <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">Completed</p>
-          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{completedProjects}</p>
-        </div>
+      {/* Projects List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {projects.map(project => (
+          <div key={project.id} className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+              <Briefcase size={120} className="text-blue-600" />
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-8">
+                <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(project.status)}`}>
+                  {project.status}
+                </div>
+                {canEdit && (
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(project)} className="p-2 text-slate-300 hover:text-blue-600 transition-colors"><Edit2 size={16} /></button>
+                    <button onClick={() => handleDelete(project.id)} className="p-2 text-slate-300 hover:text-rose-600 transition-colors"><Trash2 size={16} /></button>
+                  </div>
+                )}
+              </div>
+              <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-3">{project.projectName}</h4>
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{project.mineName || project.mine}</p>
+            </div>
+          </div>
+        ))}
       </div>
+    </div>
+  )
+}
 
-      {/* Projects Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Project Name</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Mine / Operation</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {projects.length > 0 ? projects.map(project => (
-              <tr key={project.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{project.projectName}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{project.mine}</td>
-                <td className="px-6 py-4 text-sm text-center">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)}`}>
-                    {project.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-right">
-                  {canEdit && (
-                    <>
-                      <button onClick={() => handleEdit(project)} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium mr-4">Edit</button>
-                      <button onClick={() => handleDelete(project.id)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium">Delete</button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                  <p className="font-medium">No projects configured yet</p>
-                  <p className="text-sm mt-1">Add your first project using the form above</p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+function SummaryCard({ label, value, icon, color }) {
+  const colors = {
+    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20',
+    emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20',
+    violet: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20'
+  }
+  return (
+    <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</p>
+        <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{value}</p>
       </div>
-    </main>
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${colors[color]}`}>
+        {icon}
+      </div>
+    </div>
   )
 }
 

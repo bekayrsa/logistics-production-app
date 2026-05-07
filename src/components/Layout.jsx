@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Menu, X, LogOut, Shield, Database, WifiOff, Sun, Moon } from 'lucide-react'
+import { 
+  Menu, X, LogOut, Shield, Database, WifiOff, Sun, Moon, 
+  LayoutDashboard, ClipboardList, BarChart3, LineChart, 
+  Map, Truck, Users, Settings, Activity, Layers, Package
+} from 'lucide-react'
 import { getData, saveData } from '../utils/localStorage'
 import { APP_MODE } from '../config'
 import { dataService } from '../lib/dataService'
@@ -10,6 +14,7 @@ function Layout({ currentUser, onLogout, children }) {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
   const [darkMode, setDarkMode] = useState(false)
   const [isConnected, setIsConnected] = useState(true)
+  const [briefings, setBriefings] = useState([])
 
   const location = useLocation()
 
@@ -22,45 +27,36 @@ function Layout({ currentUser, onLogout, children }) {
     }
 
     window.addEventListener('resize', handleResize)
-    handleResize() // Set initial state
+    handleResize()
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
     const savedDarkMode = getData('darkMode') || false
     setDarkMode(savedDarkMode)
+    if (savedDarkMode) document.documentElement.classList.add('dark')
+    else document.documentElement.classList.remove('dark')
+  }, [])
 
-    if (savedDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+  useEffect(() => {
+    const unsub = dataService.onConnectionChange(setIsConnected)
+    const unsubBriefings = dataService.subscribeToBriefings(setBriefings)
+    return () => {
+      unsub()
+      unsubBriefings()
     }
   }, [])
 
   useEffect(() => {
-    const unsub = dataService.onConnectionChange((status) => {
-      setIsConnected(status)
-    })
-    return () => unsub()
-  }, [])
-
-  useEffect(() => {
-    // Close sidebar on route change for mobile
-    if (!isDesktop) {
-      setSidebarOpen(false)
-    }
+    if (!isDesktop) setSidebarOpen(false)
   }, [location.pathname, isDesktop])
 
   const toggleDarkMode = () => {
     const next = !darkMode
     setDarkMode(next)
     saveData('darkMode', next)
-
-    if (next) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    if (next) document.documentElement.classList.add('dark')
+    else document.documentElement.classList.remove('dark')
   }
 
   const handleLogout = () => {
@@ -68,203 +64,226 @@ function Layout({ currentUser, onLogout, children }) {
     if (onLogout) onLogout()
   }
 
-  const handleSwitchToDemo = () => {
-    localStorage.setItem('app_mode', 'demo')
-    window.location.reload()
-  }
-
-  const getMenuItems = () => {
+  const getNavigationGroups = () => {
     const role = currentUser?.role
-    const items = []
+    const groups = []
 
+    // Operations Group
+    const operations = {
+      title: 'Operations',
+      items: [
+        { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+        { path: '/capture', label: 'Live Capture', icon: ClipboardList, roles: ['admin', 'siteManager'] },
+      ].filter(i => !i.roles || i.roles.includes(role))
+    }
+    groups.push(operations)
+
+    // Intelligence Group
+    const relevantOpenCount = currentUser?.role === 'siteManager'
+      ? briefings.filter(b => b.status === 'open' && Number(b.siteId) === Number(currentUser.assignedSite)).length
+      : briefings.filter(b => b.status === 'open').length
+
+    const intelligence = {
+      title: 'Intelligence',
+      items: [
+        { path: '/site-performance', label: 'Performance', icon: Activity },
+        { path: '/reports', label: 'Analytics', icon: LineChart, badge: relevantOpenCount },
+      ]
+    }
+    groups.push(intelligence)
+
+    // Infrastructure Group (Admin Only)
     if (role === 'admin') {
-      items.push(
-        { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-        { path: '/capture', label: 'Daily Capture', icon: '📝' },
-        { path: '/reports', label: 'Reports', icon: '📈' },
-        { path: '/projects', label: 'Projects', icon: '📁' },
-        { path: '/mines', label: 'Mines', icon: '⛏️' },
-        { path: '/sites', label: 'Sites', icon: '🏭' },
-        { path: '/trucks', label: 'Trucks', icon: '🚛' },
-        { path: '/users', label: 'Users', icon: '👥' },
-        { path: '/site-performance', label: 'Performance', icon: '📍' },
-        { path: '/admin-data', label: 'Data Management', icon: '⚙️' },
-        { path: '/settings', label: 'Settings', icon: '🔧' }
-      )
-    } else if (role === 'manager') {
-      items.push(
-        { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-        { path: '/reports', label: 'Reports', icon: '📈' },
-        { path: '/site-performance', label: 'Site Performance', icon: '🏭' }
-      )
-    } else if (role === 'siteManager') {
-      items.push(
-        { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-        { path: '/capture', label: 'Daily Capture', icon: '📝' },
-        { path: '/reports', label: 'Reports', icon: '📈' }
-      )
+      const infrastructure = {
+        title: 'Infrastructure',
+        items: [
+          { path: '/sites', label: 'Sites', icon: Map },
+          { path: '/trucks', label: 'Fleet', icon: Truck },
+          { path: '/projects', label: 'Projects', icon: Layers },
+          { path: '/users', label: 'Personnel', icon: Users },
+          { path: '/admin-data', label: 'Master Data', icon: Database },
+        ]
+      }
+      groups.push(infrastructure)
     }
 
-    return items
+    // System Group
+    const system = {
+      title: 'System',
+      items: [
+        { path: '/settings', label: 'Settings', icon: Settings },
+      ]
+    }
+    groups.push(system)
+
+    return groups
   }
 
-  const menuItems = getMenuItems()
+  const navGroups = getNavigationGroups()
   const isActive = path => location.pathname === path
-  const pageTitle = menuItems.find(item => item.path === location.pathname)?.label || 'Dashboard'
+  
+  // Find current active item label for header
+  let activeItemLabel = 'Dashboard'
+  navGroups.forEach(g => {
+    const item = g.items.find(i => i.path === location.pathname)
+    if (item) activeItemLabel = item.label
+  })
 
   return (
-    <div className="flex h-screen bg-slate-100 dark:bg-slate-950 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-500">
       {/* Mobile Overlay */}
       {!isDesktop && sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-slate-950/60 z-40 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 transform 
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-500 ease-in-out transform 
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
           ${isDesktop ? 'relative translate-x-0' : ''} 
-          flex flex-col shadow-2xl lg:shadow-lg`}
+          flex flex-col shadow-2xl lg:shadow-none`}
       >
-        {/* Brand */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
-              PM
+        {/* Brand Header */}
+        <div className="p-8 pb-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-600/30 ring-4 ring-blue-600/10">
+              <Package size={24} />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Production</h1>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 font-black">Management</p>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">PRODUCTION</h1>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-blue-600 font-black mt-1">Management Pro</p>
             </div>
           </div>
-          {!isDesktop && (
-            <button onClick={() => setSidebarOpen(false)} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-              <X size={20} />
-            </button>
-          )}
         </div>
 
-        {/* Mode Indicator Badge */}
-        <div className="px-6 py-4">
-          <div className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider border ${
-            APP_MODE === 'demo' 
-              ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-500' 
-              : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-500'
-          }`}>
-            {APP_MODE === 'demo' ? <Database size={12} /> : <Shield size={12} />}
-            <span>{APP_MODE === 'demo' ? 'Demo Mode' : 'Live Mode'}</span>
-          </div>
-        </div>
-
-        {/* Menu */}
-        <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar">
-          {menuItems.map(item => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all group ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <span className={`text-xl transition-transform group-hover:scale-110 ${isActive(item.path) ? 'scale-110' : ''}`}>{item.icon}</span>
-              <span className="font-semibold">{item.label}</span>
-            </Link>
+        {/* Navigation Groups */}
+        <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
+          {navGroups.map(group => (
+            <div key={group.title} className="space-y-2">
+              <h3 className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                {group.title}
+              </h3>
+              <div className="space-y-1">
+                {group.items.map(item => {
+                  const Icon = item.icon
+                  const active = isActive(item.path)
+                  return (
+                     <Link
+                       key={item.path}
+                       to={item.path}
+                       className={`flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 group ${
+                         active
+                           ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
+                           : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100'
+                       }`}
+                     >
+                       <div className="flex items-center space-x-3">
+                         <Icon size={20} className={`transition-transform duration-500 group-hover:scale-110 ${active ? 'scale-110' : ''}`} />
+                         <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                       </div>
+                       {item.badge > 0 && (
+                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${active ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'}`}>
+                           {item.badge}
+                         </span>
+                       )}
+                     </Link>
+                  )
+                })}
+              </div>
+            </div>
           ))}
         </nav>
 
-        {/* User Panel */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-800 space-y-4">
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-black tracking-tighter mb-1">User Profile</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{currentUser?.name}</p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium capitalize">{currentUser?.role}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={toggleDarkMode}
-              className="flex items-center justify-center p-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
-              title={darkMode ? 'Light Mode' : 'Dark Mode'}
-            >
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all"
-              title="Logout"
-            >
-              <LogOut size={20} />
-            </button>
+        {/* Footer Panel */}
+        <div className="p-6 mt-auto">
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-4 border border-slate-100 dark:border-slate-800 transition-all">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                <Users size={18} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">Authenticated</p>
+                <p className="text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">
+                  {currentUser?.name} {currentUser?.surname}
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={toggleDarkMode}
+                className="flex items-center justify-center py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-400"
+              >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center py-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 hover:bg-rose-100 transition-all border border-rose-100 dark:border-rose-900/30"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Area */}
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Mobile Header Bar */}
+        {/* Mobile Navbar */}
         {!isDesktop && (
-          <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+          <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              className="w-10 h-10 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
             >
               <Menu size={24} />
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">PM</div>
-              <span className="font-bold text-sm dark:text-white">Logistics</span>
+              <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <Package size={16} />
+              </div>
+              <span className="font-black text-sm tracking-tighter dark:text-white">PRODUCTION</span>
             </div>
-            <div className="w-10"></div> {/* Spacer for symmetry */}
+            <div className="w-10"></div>
           </header>
         )}
 
-        {/* Connection Failure Header Banner */}
+        {/* Global Connectivity Banner */}
         {!isConnected && APP_MODE === 'live' && (
-          <div className="bg-red-600 text-white px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-lg z-50">
+          <div className="bg-rose-600 text-white px-8 py-3 flex items-center justify-between animate-in slide-in-from-top duration-500 z-50">
             <div className="flex items-center space-x-3">
               <WifiOff size={18} className="animate-pulse" />
-              <span className="font-bold text-xs sm:text-sm text-center sm:text-left">
-                Cloud Connection Lost. Production data cannot be saved.
-              </span>
+              <p className="text-xs font-black uppercase tracking-widest">Connection Offline • Sync Paused</p>
             </div>
-            <button 
-              onClick={handleSwitchToDemo}
-              className="bg-white text-red-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase hover:bg-red-50 transition-colors shadow-sm whitespace-nowrap"
-            >
-              Switch to Demo Mode
-            </button>
           </div>
         )}
 
-        {/* Header (Desktop Only) */}
+        {/* Desktop Header */}
         {isDesktop && (
-          <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-8 py-6 sticky top-0 z-10">
+          <header className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-12 py-8 sticky top-0 z-10">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                  {pageTitle}
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1">Intelligence Console</p>
+                <h2 className="text-4xl font-black text-slate-950 dark:text-white tracking-tighter transition-all">
+                  {activeItemLabel}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
-                  {new Date().toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-2">Current Session</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-300">
+                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
             </div>
           </header>
         )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        {/* Content Viewport */}
+        <div className="flex-1 overflow-auto bg-slate-50/50 dark:bg-slate-950/50">
+          <div className="max-w-7xl mx-auto p-6 sm:p-8 lg:p-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {children ? children : <Outlet />}
           </div>
         </div>

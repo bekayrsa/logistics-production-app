@@ -13,6 +13,24 @@ const ensureDatabase = () => {
 };
 
 export const dataService = {
+  // Company Info
+  getCompanyInfo: async () => {
+    if (isDemo) {
+      return localDb.getData('companyInfo') || { companyName: 'Production Management Pro', assignedAdmin: 'admin@miningsense.com' }
+    } else {
+      const data = await firebaseDb.readData('companyInfo')
+      return data || { companyName: 'Production Management Pro', assignedAdmin: 'admin@miningsense.com' }
+    }
+  },
+
+  saveCompanyInfo: async (info) => {
+    if (isDemo) {
+      localDb.saveData('companyInfo', info)
+    } else {
+      await firebaseDb.writeData('companyInfo', info)
+    }
+  },
+
   // Sites
   getSites: async () => {
     if (isDemo) {
@@ -92,8 +110,17 @@ export const dataService = {
     } else {
       ensureDatabase();
       const id = captureData.id || push(ref(database, 'captures')).key
-      await set(ref(database, `captures/${id}`), { ...captureData, id })
-      return { ...captureData, id }
+      const extendedData = {
+        ...captureData,
+        id,
+        captureID: id,
+        capturedBy: captureData.userName,
+        capturedResources: captureData.resource || 'Coal',
+        captureTime: new Date().toISOString(),
+        captureLoad: captureData.tons
+      }
+      await set(ref(database, `captures/${id}`), extendedData)
+      return extendedData
     }
   },
 
@@ -270,6 +297,22 @@ export const dataService = {
     } else {
       if (!database) return () => {};
       const refNode = ref(database, 'mines')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  subscribeToComments: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('comments') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'comments')
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -461,6 +504,80 @@ export const dataService = {
       localDb.saveData('captures', captures.filter(c => c.id !== id))
     } else {
       await firebaseDb.deleteData(`captures/${id}`)
+    }
+  },
+
+  // Briefings (Performance Briefings)
+  subscribeToBriefings: (callback) => {
+    if (isDemo) {
+      const data = localDb.getData('briefings') || []
+      callback(data)
+      return () => {}
+    } else {
+      if (!database) return () => {};
+      const refNode = ref(database, 'briefings')
+      const unsubscribe = onValue(refNode, (snapshot) => {
+        const data = snapshot.val() || {}
+        callback(Object.values(data).filter(Boolean))
+      })
+      return unsubscribe
+    }
+  },
+
+  saveBriefing: async (briefingData) => {
+    const id = briefingData.id || Date.now().toString()
+    const finalData = {
+      ...briefingData,
+      id,
+      timestamp: briefingData.timestamp || Date.now(),
+      status: briefingData.status || 'open',
+      replies: briefingData.replies || []
+    }
+    if (isDemo) {
+      const briefings = localDb.getData('briefings') || []
+      const index = briefings.findIndex(b => b.id === id)
+      if (index > -1) {
+        briefings[index] = finalData
+        localDb.saveData('briefings', briefings)
+      } else {
+        localDb.saveData('briefings', [...briefings, finalData])
+      }
+    } else {
+      await firebaseDb.writeData(`briefings/${id}`, finalData)
+    }
+  },
+
+  addReplyToBriefing: async (briefingId, reply) => {
+    if (isDemo) {
+      const briefings = localDb.getData('briefings') || []
+      const index = briefings.findIndex(b => b.id === briefingId)
+      if (index > -1) {
+        const briefing = briefings[index]
+        briefing.replies = [...(briefing.replies || []), { ...reply, timestamp: Date.now() }]
+        localDb.saveData('briefings', briefings)
+      }
+    } else {
+      // In Realtime Database, we fetch then update for nested arrays usually, or use a separate node
+      // To keep it simple and consistent with other methods here:
+      const briefings = await firebaseDb.readData('briefings')
+      if (briefings && briefings[briefingId]) {
+        const briefing = briefings[briefingId]
+        const updatedReplies = [...(briefing.replies || []), { ...reply, timestamp: Date.now() }]
+        await firebaseDb.writeData(`briefings/${briefingId}/replies`, updatedReplies)
+      }
+    }
+  },
+
+  resolveBriefing: async (briefingId) => {
+    if (isDemo) {
+      const briefings = localDb.getData('briefings') || []
+      const index = briefings.findIndex(b => b.id === briefingId)
+      if (index > -1) {
+        briefings[index].status = 'resolved'
+        localDb.saveData('briefings', briefings)
+      }
+    } else {
+      await firebaseDb.writeData(`briefings/${briefingId}/status`, 'resolved')
     }
   }
 }

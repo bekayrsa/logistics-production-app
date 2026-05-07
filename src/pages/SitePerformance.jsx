@@ -1,8 +1,26 @@
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
+import { exportToCSV } from '../utils/exportUtils'
+import { FileText, TrendingUp, MessageSquare, Send, X, User } from 'lucide-react'
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Legend 
+} from 'recharts'
 
 function SitePerformance({ currentUser }) {
   const [sitePerformance, setSitePerformance] = useState([])
+  const [comments, setComments] = useState([])
+  const [activeSiteId, setActiveSiteId] = useState(null)
+  const [commentText, setCommentText] = useState('')
+  const [showComments, setShowComments] = useState(false)
+
+  const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     const loadPerformance = async () => {
@@ -15,12 +33,10 @@ function SitePerformance({ currentUser }) {
 
       let sites = sitesData
       if (currentUser.role === 'siteManager') {
-        sites = sites.filter(site => Number(site.id) === Number(currentUser.assignedSite))
+        const assignedSiteId = Number(currentUser.assignedSite)
+        sites = sites.filter(site => Number(site.id) === assignedSiteId)
       }
       const production = productionData
-
-      // Get today's date
-      const today = new Date().toISOString().split('T')[0]
 
       // Calculate performance for each site
       const performance = sites.map(site => {
@@ -29,23 +45,24 @@ function SitePerformance({ currentUser }) {
         if (todayProduction) {
           return {
             id: site.id,
+            name: site.siteName,
             siteName: site.siteName,
             mineName: site.mineName,
             resource: site.resource,
-            target: site.dailyTarget,
-            actual: todayProduction.actual,
+            target: Number(site.dailyTarget || 0),
+            actual: Number(todayProduction.actual || 0),
             variance: todayProduction.variance,
             status: getPerformanceStatus(todayProduction.variance),
             statusColor: getStatusColor(todayProduction.variance)
           }
         } else {
-          // No data for today
           return {
             id: site.id,
+            name: site.siteName,
             siteName: site.siteName,
             mineName: site.mineName,
             resource: site.resource,
-            target: site.dailyTarget,
+            target: Number(site.dailyTarget || 0),
             actual: 0,
             variance: -100,
             status: 'No Data',
@@ -58,7 +75,31 @@ function SitePerformance({ currentUser }) {
     }
 
     loadPerformance()
-  }, [currentUser])
+  }, [currentUser, today])
+
+  useEffect(() => {
+    const unsub = dataService.subscribeToComments(setComments)
+    return () => unsub()
+  }, [])
+
+  const handleAddComment = async (e) => {
+    e.preventDefault()
+    if (!commentText.trim() || !activeSiteId) return
+
+    const newComment = {
+      id: `comment_${Date.now()}`,
+      siteId: activeSiteId,
+      date: today,
+      authorId: currentUser.email,
+      authorName: currentUser.name || currentUser.email.split('@')[0],
+      authorRole: currentUser.role,
+      text: commentText,
+      timestamp: Date.now()
+    }
+
+    await dataService.saveComment(newComment)
+    setCommentText('')
+  }
 
   const getPerformanceStatus = (variance) => {
     if (variance >= 0) return 'On Target'
@@ -78,6 +119,11 @@ function SitePerformance({ currentUser }) {
     return '↓'
   }
 
+  const activeSite = sitePerformance.find(s => s.id === activeSiteId)
+  const filteredComments = comments
+    .filter(c => c.siteId === activeSiteId && c.date === today)
+    .sort((a, b) => b.timestamp - a.timestamp)
+
   const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager'
 
   if (!canView) {
@@ -92,88 +138,245 @@ function SitePerformance({ currentUser }) {
   }
 
   return (
-    <main className="p-6">
-      <h2 className="text-2xl font-semibold mb-2 text-gray-800 dark:text-white">Site Performance Analytics</h2>
-      <p className="text-gray-600 dark:text-gray-400 mb-6">Today's production performance across all sites</p>
+    <main className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+        <button 
+          onClick={() => exportToCSV(sitePerformance, `production_performance_${today}.csv`)}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20"
+        >
+          <FileText size={16} />
+          Export CSV
+        </button>
+      </div>
+
+      {/* Overview Graph */}
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-8 flex items-center">
+          <TrendingUp className="mr-2 text-blue-600" size={20} />
+          Today's Production vs Target (Tons)
+        </h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sitePerformance} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+              <Tooltip 
+                cursor={{ fill: 'transparent' }}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const actual = payload[0].value
+                    const target = payload[1]?.value || 0
+                    return (
+                      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</p>
+                        <div className="space-y-1">
+                          <p className="text-sm font-black text-blue-600 flex justify-between gap-4">
+                            <span>Actual:</span> <span>{actual.toLocaleString()}t</span>
+                          </p>
+                          <p className="text-sm font-black text-slate-400 flex justify-between gap-4">
+                            <span>Target:</span> <span>{target.toLocaleString()}t</span>
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  }
+                  return null
+                }}
+              />
+              <Legend 
+                verticalAlign="top" 
+                align="right" 
+                iconType="circle"
+                content={({ payload }) => (
+                  <div className="flex gap-4 mb-4">
+                    {payload.map((entry, index) => (
+                      <div key={`item-${index}`} className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Bar name="Actual" dataKey="actual" radius={[4, 4, 0, 0]} barSize={32} fill="#2563eb" />
+              <Bar name="Target" dataKey="target" radius={[4, 4, 0, 0]} barSize={32} fill="#e2e8f0" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {sitePerformance.map(site => (
-          <div key={site.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-              {/* Site Info */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{site.siteName}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{site.mineName}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs mr-2">
-                    {site.resource}
-                  </span>
-                </p>
-              </div>
+        {sitePerformance.map(site => {
+          const siteCommentsCount = comments.filter(c => c.siteId === site.id && c.date === today).length
+          return (
+            <div key={site.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8 hover:shadow-md transition-shadow group">
+              <div className="grid grid-cols-1 lg:grid-cols-6 gap-8 items-center">
+                {/* Site Info */}
+                <div className="lg:col-span-1">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{site.siteName}</h3>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{site.mineName}</p>
+                  <div className="mt-3">
+                    <span className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      {site.resource}
+                    </span>
+                  </div>
+                </div>
 
-              {/* Metrics */}
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Daily Target</p>
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">{site.target}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">tons</p>
-              </div>
+                {/* Metrics */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Target</p>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{site.target.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Tons</p>
+                </div>
 
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Actual Production</p>
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">{site.actual}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">tons</p>
-              </div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Actual</p>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{site.actual.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Tons</p>
+                </div>
 
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Variance</p>
-                <p className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-1">
-                  {site.variance}%
-                  <span className="text-lg">{getVarianceIcon(site.variance)}</span>
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">vs target</p>
-              </div>
-
-              {/* Status */}
-              <div className="flex justify-end">
-                <div className={`px-4 py-3 rounded-lg text-center ${site.statusColor}`}>
-                  <p className="text-sm font-bold">{site.status}</p>
-                  <p className="text-xs mt-1">
-                    {site.status === 'On Target' && '✓ Met'}
-                    {site.status === 'Below Target' && '⚠ Close'}
-                    {site.status === 'Failed Target' && '✗ Miss'}
-                    {site.status === 'No Data' && '−'}
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Variance</p>
+                  <p className={`text-2xl font-black leading-none flex items-center justify-center gap-1 ${
+                    site.actual >= site.target ? 'text-emerald-500' : 'text-rose-500'
+                  }`}>
+                    {site.variance}%
+                    <span className="text-lg">{getVarianceIcon(site.variance)}</span>
                   </p>
+                  <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Efficiency</p>
+                </div>
+
+                {/* Status */}
+                <div className="flex flex-col items-center">
+                  <div className={`w-full py-4 rounded-3xl text-center ${site.statusColor}`}>
+                    <p className="text-xs font-black uppercase tracking-widest">{site.status}</p>
+                  </div>
+                </div>
+
+                {/* Comment Trigger */}
+                <div className="flex justify-center lg:justify-end">
+                  <button 
+                    onClick={() => {
+                      setActiveSiteId(site.id)
+                      setShowComments(true)
+                    }}
+                    className="relative w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all border border-slate-100 dark:border-slate-800 group-hover:scale-105"
+                  >
+                    <MessageSquare size={24} />
+                    {siteCommentsCount > 0 && (
+                      <span className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-4 border-white dark:border-slate-950 animate-bounce">
+                        {siteCommentsCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Summary Stats */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">On Target Sites</p>
-          <p className="text-3xl font-bold text-green-600">
-            {sitePerformance.filter(s => s.status === 'On Target').length}
-          </p>
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <SummaryCard label="On Target" count={sitePerformance.filter(s => s.status === 'On Target').length} color="emerald" />
+        <SummaryCard label="Near Target" count={sitePerformance.filter(s => s.status === 'Below Target').length} color="amber" />
+        <SummaryCard label="Failed" count={sitePerformance.filter(s => s.status === 'Failed Target').length} color="rose" />
+      </div>
+
+      {/* Comment Sidebar Backdrop */}
+      {showComments && (
+        <div 
+          className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
+          onClick={() => setShowComments(false)}
+        />
+      )}
+
+      {/* Comment Sidebar */}
+      <div className={`fixed inset-y-0 right-0 w-full sm:w-[450px] bg-white dark:bg-slate-900 z-[101] shadow-2xl transform transition-transform duration-500 ease-out flex flex-col border-l border-slate-200 dark:border-slate-800 ${
+        showComments ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Performance Briefing</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{activeSite?.siteName}</p>
+          </div>
+          <button 
+            onClick={() => setShowComments(false)}
+            className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Below Target Sites</p>
-          <p className="text-3xl font-bold text-yellow-600">
-            {sitePerformance.filter(s => s.status === 'Below Target').length}
-          </p>
+        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
+          {filteredComments.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-50 grayscale">
+              <MessageSquare size={48} className="text-slate-300 mb-4" />
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No comments for today yet</p>
+              <p className="text-xs text-slate-500 mt-2">Managers can leave performance notes below</p>
+            </div>
+          ) : filteredComments.map(comment => (
+            <div key={comment.id} className={`flex flex-col ${comment.authorId === currentUser.email ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[85%] rounded-[1.5rem] p-5 ${
+                comment.authorId === currentUser.email 
+                  ? 'bg-blue-600 text-white rounded-br-none' 
+                  : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white border border-slate-100 dark:border-slate-700 rounded-bl-none shadow-sm'
+              }`}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <User size={12} className={comment.authorId === currentUser.email ? 'text-blue-100' : 'text-slate-400'} />
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${
+                    comment.authorId === currentUser.email ? 'text-blue-100' : 'text-slate-500'
+                  }`}>
+                    {comment.authorName} • {comment.authorRole}
+                  </span>
+                </div>
+                <p className="text-sm font-medium leading-relaxed">{comment.text}</p>
+              </div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mt-2 px-2">
+                {new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          ))}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Failed Target Sites</p>
-          <p className="text-3xl font-bold text-red-600">
-            {sitePerformance.filter(s => s.status === 'Failed Target').length}
-          </p>
-        </div>
+        {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
+          <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <form onSubmit={handleAddComment} className="relative">
+              <textarea 
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Leave a performance comment..."
+                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800 border-none rounded-[2rem] text-sm focus:ring-2 focus:ring-blue-500 transition-all resize-none dark:text-white placeholder:text-slate-400 min-h-[120px]"
+              />
+              <button 
+                type="submit"
+                disabled={!commentText.trim()}
+                className="absolute bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:grayscale"
+              >
+                <Send size={20} />
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </main>
+  )
+}
+
+function SummaryCard({ label, count, color }) {
+  const colors = {
+    emerald: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20',
+    amber: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20',
+    rose: 'text-rose-500 bg-rose-50 dark:bg-rose-900/20'
+  }
+  return (
+    <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-500">{label}</p>
+      <span className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-inner ${colors[color]}`}>
+        {count}
+      </span>
+    </div>
   )
 }
 

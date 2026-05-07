@@ -11,14 +11,10 @@ function Trucks({ currentUser }) {
     capacity: ''
   })
 
-  const loadTrucks = async () => {
-    const data = await dataService.getTrucks()
-    setTrucks(data)
-  }
-
   useEffect(() => {
     if (!currentUser) return
-    loadTrucks()
+    const unsubscribe = dataService.subscribeToTrucks((data) => setTrucks(data))
+    return () => unsubscribe()
   }, [currentUser])
 
   const handleSubmit = async (e) => {
@@ -35,7 +31,6 @@ function Trucks({ currentUser }) {
     await dataService.saveTruck(truckData)
     setEditingId(null)
     setFormData({ truckName: '', type: 'ADT', capacity: '' })
-    loadTrucks()
   }
 
   const handleEdit = (truck) => {
@@ -52,9 +47,11 @@ function Trucks({ currentUser }) {
   const handleDelete = async (id) => {
     if (currentUser.role !== 'admin') return
     if (window.confirm('Are you sure you want to delete this truck?')) {
-      // In a full implementation, we'd add deleteTruck to dataService
-      console.log('Delete requested for truck:', id)
-      alert('Delete functionality is currently being finalized in the cloud backend.')
+      try {
+        await dataService.deleteTruck(id)
+      } catch (err) {
+        alert('Failed to delete truck: ' + err.message)
+      }
     }
   }
 

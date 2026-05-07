@@ -13,6 +13,7 @@ import Capture from './pages/Capture'
 import Reports from './pages/Reports'
 import Users from './pages/Users'
 import AdminDataManagement from './pages/AdminDataManagement'
+import Settings from './pages/Settings'
 import { loadDemoData } from './utils/demoData'
 import { getData } from './utils/localStorage'
 
@@ -54,6 +55,7 @@ function App() {
         <Route path="capture" element={<Capture currentUser={currentUser} />} />
         <Route path="reports" element={<Reports currentUser={currentUser} />} />
         <Route path="users" element={<Users currentUser={currentUser} />} />
+        <Route path="settings" element={<Settings currentUser={currentUser} />} />
       </Route>
     </Routes>
   )

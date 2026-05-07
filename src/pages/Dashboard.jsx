@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
+import { exportToCSV } from '../utils/exportUtils'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -12,7 +13,9 @@ import {
   ArrowRight,
   Target,
   BarChart3,
-  Clock
+  Clock,
+  FileText,
+  MessageSquare
 } from 'lucide-react'
 
 function Dashboard({ currentUser }) {
@@ -25,8 +28,17 @@ function Dashboard({ currentUser }) {
   })
   const [productionHistory, setProductionHistory] = useState([])
   const [recentCaptures, setRecentCaptures] = useState([])
+  const [comments, setComments] = useState([])
   const [sitePerformance, setSitePerformance] = useState([])
   const [loading, setLoading] = useState(true)
+  const [availableSites, setAvailableSites] = useState([])
+  const [selectedSite, setSelectedSite] = useState('all')
+
+  useEffect(() => {
+    if (currentUser?.role === 'siteManager') {
+      setSelectedSite(String(currentUser.assignedSite))
+    }
+  }, [currentUser])
 
   useEffect(() => {
     if (!currentUser) return
@@ -34,11 +46,40 @@ function Dashboard({ currentUser }) {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const [history, captures, sites] = await Promise.all([
+        let [history, captures, sitesData, commentsData] = await Promise.all([
           dataService.getProduction(),
           dataService.getCaptures(),
-          dataService.getSites()
+          dataService.getSites(),
+          dataService.getComments()
         ])
+
+        setComments(commentsData)
+
+        // 1. Populate available sites for the filter dropdown
+        if (currentUser.role === 'admin' || currentUser.role === 'manager') {
+          setAvailableSites(sitesData)
+        } else if (currentUser.role === 'siteManager') {
+          const userAssigned = Array.isArray(currentUser.assignedSites) 
+            ? currentUser.assignedSites.map(id => Number(id))
+            : [Number(currentUser.assignedSite)]
+          setAvailableSites(sitesData.filter(s => userAssigned.includes(Number(s.id))))
+        }
+
+        // 2. Initial role-based isolation (Site Managers NEVER see other sites)
+        if (currentUser.role === 'siteManager') {
+          const userAssigned = Array.isArray(currentUser.assignedSites) 
+            ? currentUser.assignedSites.map(id => Number(id))
+            : [Number(currentUser.assignedSite)]
+          
+          history = history.filter(h => userAssigned.includes(Number(h.siteId)))
+          captures = captures.filter(c => userAssigned.includes(Number(c.siteId)))
+        }
+
+        // 3. User-selected filter (For admins/managers or multi-site managers)
+        if (selectedSite !== 'all') {
+          history = history.filter(h => Number(h.siteId) === Number(selectedSite))
+          captures = captures.filter(c => Number(c.siteId) === Number(selectedSite))
+        }
 
         const today = new Date().toISOString().split('T')[0]
         const todayProd = history.filter(h => h.date === today)
@@ -60,8 +101,10 @@ function Dashboard({ currentUser }) {
           todayProgress: progress
         })
 
-        setProductionHistory(history.slice(-7)) // Last 7 entries
-        setRecentCaptures(captures.slice(-5)) // Last 5 captures
+        const sortedCaptures = [...captures].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+
+        setProductionHistory(history.slice(-7))
+        setRecentCaptures(sortedCaptures.slice(0, 5)) 
         setSitePerformance(todayProd)
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err)
@@ -72,15 +115,16 @@ function Dashboard({ currentUser }) {
 
     fetchData()
 
-    // Subscribe to real-time updates
     const unsubCaptures = dataService.subscribeToCaptures(() => fetchData())
     const unsubProd = dataService.subscribeToProduction(() => fetchData())
+    const unsubComments = dataService.subscribeToComments(setComments)
 
     return () => {
       unsubCaptures()
       unsubProd()
+      unsubComments()
     }
-  }, [currentUser])
+  }, [currentUser, selectedSite])
 
   if (loading) {
     return (
@@ -91,8 +135,38 @@ function Dashboard({ currentUser }) {
   }
 
 
+  const navigate = useNavigate()
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => exportToCSV(sitePerformance, `executive_summary_${new Date().toISOString().split('T')[0]}.csv`)}
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-600/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+          >
+            <FileText size={16} />
+            Export Summary
+          </button>
+
+          {availableSites.length > 1 && (
+            <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800/50">
+              <MapPin size={18} className="text-blue-600" />
+              <select 
+                value={selectedSite}
+                onChange={(e) => setSelectedSite(e.target.value)}
+                className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 focus:ring-0 cursor-pointer p-0"
+              >
+                {currentUser.role !== 'siteManager' && <option value="all">Global View</option>}
+                {availableSites.map(site => (
+                  <option key={site.id} value={site.id}>{site.siteName}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Top Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
@@ -147,7 +221,15 @@ function Dashboard({ currentUser }) {
                         <MapPin size={24} />
                       </div>
                       <div>
-                        <h4 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{site.siteName}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{site.siteName}</h4>
+                          {comments.filter(c => c.siteId === site.id && c.date === new Date().toISOString().split('T')[0]).length > 0 && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-800">
+                              <MessageSquare size={10} />
+                              {comments.filter(c => c.siteId === site.id && c.date === new Date().toISOString().split('T')[0]).length}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Coal Operations</p>
                       </div>
                     </div>
@@ -205,7 +287,10 @@ function Dashboard({ currentUser }) {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-8 py-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center">
+            <button 
+              onClick={() => navigate('/reports')}
+              className="w-full mt-8 py-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center"
+            >
               View All Logs <ArrowRight size={14} className="ml-2" />
             </button>
           </div>

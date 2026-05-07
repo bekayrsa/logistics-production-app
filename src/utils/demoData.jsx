@@ -3,7 +3,7 @@ import { saveData } from './localStorage'
 
 export function loadDemoData() {
   // 1. Mines & Resources (Coal, Chrome, Platinum)
-  const company = { id: 1, name: 'Azania Mining Group', description: 'South African Premier Logistics & Mining' }
+  const company = { id: 1, name: 'Azania Mining Group', description: 'South African Premier Production Management & Mining' }
   saveData('company', company)
 
   const mines = [
@@ -31,7 +31,7 @@ export function loadDemoData() {
   const projects = [
     { id: 1, projectName: 'Coal Expansion H1', mine: 'Grootegeluk Complex', status: 'Active' },
     { id: 2, projectName: 'Platinum Telemetry', mine: 'Mogalakwena North', status: 'Active' },
-    { id: 3, projectName: 'Chrome Logistics Optimization', mine: 'Thaba Chrome', status: 'Active' }
+    { id: 3, projectName: 'Chrome Production Optimization', mine: 'Thaba Chrome', status: 'Active' }
   ]
   saveData('projects', projects)
 

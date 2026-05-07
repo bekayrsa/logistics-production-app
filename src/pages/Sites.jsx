@@ -11,17 +11,16 @@ function Sites({ currentUser }) {
     dailyTarget: ''
   })
 
-  const loadSites = async () => {
-    let storedSites = await dataService.getSites()
-    if (currentUser.role === 'siteManager') {
-      storedSites = storedSites.filter(site => Number(site.id) === Number(currentUser.assignedSite))
-    }
-    setSites(storedSites)
-  }
-
   useEffect(() => {
     if (!currentUser) return
-    loadSites()
+    const unsubscribe = dataService.subscribeToSites((storedSites) => {
+      let filtered = storedSites
+      if (currentUser.role === 'siteManager') {
+        filtered = filtered.filter(site => Number(site.id) === Number(currentUser.assignedSite))
+      }
+      setSites(filtered)
+    })
+    return () => unsubscribe()
   }, [currentUser])
 
   const handleSubmit = async (e) => {
@@ -41,7 +40,6 @@ function Sites({ currentUser }) {
     await dataService.saveSite(siteData)
     setEditingId(null)
     setFormData({ siteName: '', resource: 'Coal', dailyTarget: '' })
-    loadSites()
   }
 
   const handleEdit = (site) => {
@@ -58,8 +56,11 @@ function Sites({ currentUser }) {
   const handleDelete = async (id) => {
     if (currentUser.role !== 'admin') return
     if (window.confirm('Are you sure you want to delete this site?')) {
-      console.log('Delete requested for site:', id)
-      alert('Delete functionality is being integrated into the production environment.')
+      try {
+        await dataService.deleteSite(id)
+      } catch (err) {
+        alert('Failed to delete site: ' + err.message)
+      }
     }
   }
 

@@ -2,6 +2,6 @@ export const APP_MODE = localStorage.getItem('app_mode') || 'production' // Chan
 
 export const CONFIG = {
     version: '4.0.0',
-    companyName: 'Mining Logistics Pro',
+    companyName: 'Production Management Pro',
     supportEmail: 'support@miningsense.com'
 }

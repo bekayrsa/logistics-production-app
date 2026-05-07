@@ -11,7 +11,8 @@ import {
   Clock,
   ChevronRight,
   Info,
-  TrendingUp
+  TrendingUp,
+  Trash2
 } from 'lucide-react'
 
 const FAILURE_REASONS = [
@@ -59,22 +60,26 @@ function Capture({ currentUser }) {
   })
 
   useEffect(() => {
-    const fetchStaticData = async () => {
-      if (!currentUser) return
-      const [sitesData, trucksData] = await Promise.all([
-        dataService.getSites(),
-        dataService.getTrucks()
-      ])
+    if (!currentUser) return
+    
+    const unsubSites = dataService.subscribeToSites((sitesData) => {
       let allSites = sitesData
       if (currentUser.role === 'siteManager') {
         allSites = allSites.filter(site => Number(site.id) === Number(currentUser.assignedSite))
         setFormData(prev => ({ ...prev, siteId: String(currentUser.assignedSite) }))
       }
       setSites(allSites)
+    })
+
+    const unsubTrucks = dataService.subscribeToTrucks((trucksData) => {
       setTrucks(trucksData)
       setFilteredTrucks(trucksData)
+    })
+
+    return () => {
+      unsubSites()
+      unsubTrucks()
     }
-    fetchStaticData()
   }, [currentUser])
 
   useEffect(() => {
@@ -126,7 +131,10 @@ function Capture({ currentUser }) {
       truckId: selectedTruck.id,
       truckName: selectedTruck.truckName,
       loads: Number(formData.loads),
-      tons
+      tons,
+      userId: currentUser.id,
+      userName: `${currentUser.name} ${currentUser.surname || ''}`.trim(),
+      resource: selectedSite.resource
     }
     setPendingEntries(prev => [...prev, newEntry])
     setFormData(prev => ({ ...prev, truckId: '', loads: '' }))
@@ -312,7 +320,7 @@ function Capture({ currentUser }) {
                   onClick={() => setPendingEntries(prev => prev.filter(e => e.id !== entry.id))}
                   className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
                 >
-                  <AlertTriangle size={18} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             ))}

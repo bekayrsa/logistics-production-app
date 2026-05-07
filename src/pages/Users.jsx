@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { APP_MODE } from '../config'
 import { secondaryAuth } from '../lib/firebase'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
+import { Users as UsersIcon, Plus, Edit2, Trash2, Shield, Mail, BadgeCheck, Briefcase } from 'lucide-react'
 
 function Users({ currentUser }) {
   const [users, setUsers] = useState([])
+  const [sites, setSites] = useState([])
   const [isEditing, setIsEditing] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
+    surname: '',
     email: '',
     role: 'siteManager',
     assignedSite: ''
@@ -20,10 +23,12 @@ function Users({ currentUser }) {
 
   useEffect(() => {
     if (!canView) return
-    const unsubscribe = dataService.subscribeToUsers((data) => {
-      setUsers(data)
-    })
-    return () => unsubscribe()
+    const unsubUsers = dataService.subscribeToUsers((data) => setUsers(data))
+    const unsubSites = dataService.subscribeToSites((data) => setSites(data))
+    return () => {
+      unsubUsers()
+      unsubSites()
+    }
   }, [currentUser])
 
   const handleSubmit = async (e) => {
@@ -38,23 +43,18 @@ function Users({ currentUser }) {
 
     if (!isEditing && APP_MODE !== 'demo' && secondaryAuth) {
       try {
-        // We use the secondary Auth instance so we don't log out the current admin
         await createUserWithEmailAndPassword(secondaryAuth, formData.email, "welcome123");
+        await sendPasswordResetEmail(secondaryAuth, formData.email);
       } catch (err) {
-        console.error("Failed to create user in Firebase Auth:", err);
-        // Note: You could display an error message here, but we'll still save 
-        // to the DB in case they are already in Auth or we want them tracked anyway.
-        if (err.code === 'auth/email-already-in-use') {
-          alert('User email is already in use in Firebase Authentication.');
-        } else {
-          alert('Failed to create user in Firebase Authentication: ' + err.message);
-          return; // Stop here so we don't add to Realtime DB if Auth failed
+        console.error("Firebase Auth Error:", err);
+        if (err.code !== 'auth/email-already-in-use') {
+          alert('Auth Error: ' + err.message);
+          return;
         }
       }
     }
 
     await dataService.saveUser(userData)
-    
     setIsEditing(false)
     setEditingUser(null)
     setFormData({ name: '', email: '', role: 'siteManager', assignedSite: '' })
@@ -66,195 +66,209 @@ function Users({ currentUser }) {
     setEditingUser(user)
     setFormData({
       name: user.name,
+      surname: user.surname || '',
       email: user.email,
       role: user.role,
       assignedSite: user.assignedSite || ''
     })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      // In a real production app, we would have a deleteUser method in dataService
-      // For now, we'll implement a soft delete or ignore if not available
-      alert('Delete functionality is being integrated into the production environment.')
+    if (window.confirm('Confirm permanent deletion of this user profile?')) {
+      try {
+        await dataService.deleteUser(userId)
+      } catch (err) {
+        alert('Deletion failed: ' + err.message)
+      }
     }
   }
 
   const handleCancel = () => {
     setIsEditing(false)
     setEditingUser(null)
-    setFormData({ name: '', email: '', role: 'siteManager', assignedSite: '' })
+    setFormData({ name: '', surname: '', email: '', role: 'siteManager', assignedSite: '' })
   }
 
   if (!canView) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">You do not have permission to view this page.</p>
+      <div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in duration-700">
+        <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-3xl flex items-center justify-center text-rose-600 mb-6">
+          <Shield size={40} />
         </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Access Denied</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">Personnel records are highly sensitive and restricted to authorized managers.</p>
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
-        <p className="text-gray-600">Manage user accounts and roles</p>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <SummaryCard label="Total Personnel" value={users.length} icon={<UsersIcon className="text-blue-600" />} color="blue" />
+        <SummaryCard label="Field Managers" value={users.filter(u => u.role === 'siteManager').length} icon={<BadgeCheck className="text-emerald-600" />} color="emerald" />
+        <SummaryCard label="Administrators" value={users.filter(u => u.role === 'admin').length} icon={<Shield className="text-violet-600" />} color="violet" />
       </div>
 
-      {/* Add/Edit Form */}
       {canEdit && (
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">
-          {isEditing ? 'Edit User' : 'Add New User'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+          <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-3">
+            {isEditing ? <Edit2 className="text-blue-600" /> : <Plus className="text-blue-600" />}
+            {isEditing ? 'Update User Identity' : 'Provision New User'}
+          </h3>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">First Name</label>
+              <input 
+                required
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
+                onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="John"
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Surname</label>
+              <input 
                 required
+                value={formData.surname}
+                onChange={e => setFormData(prev => ({ ...prev, surname: e.target.value }))}
+                placeholder="Doe"
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Role
-              </label>
-              <select
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Email Credentials</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  required
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="corporate@email.com"
+                  className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Organizational Role</label>
+              <select 
                 value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={e => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white appearance-none"
               >
-                <option value="admin">Company Admin</option>
-                <option value="manager">Manager</option>
-                <option value="siteManager">Site Manager</option>
+                <option value="admin">Company Administrator</option>
+                <option value="manager">Operations Manager</option>
+                <option value="siteManager">Field Site Manager</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assigned Site (for Site Managers)
-              </label>
-              <input
-                type="number"
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Deployment Assignment</label>
+              <select 
                 value={formData.assignedSite}
-                onChange={(e) => setFormData({...formData, assignedSite: e.target.value ? parseInt(e.target.value) : ''})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Leave empty for Admin/Manager"
-              />
-            </div>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              {isEditing ? 'Update User' : 'Add User'}
-            </button>
-            {isEditing && (
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                onChange={e => setFormData(prev => ({ ...prev, assignedSite: e.target.value }))}
+                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white appearance-none"
               >
-                Cancel
+                <option value="">Global/Administrative Access</option>
+                {sites.map(site => <option key={site.id} value={site.id}>{site.siteName}</option>)}
+              </select>
+            </div>
+            <div className="lg:col-span-2 flex justify-end gap-4 pt-4">
+              {isEditing && (
+                <button 
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-500 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button 
+                type="submit"
+                className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
+              >
+                {isEditing ? 'Update Profile' : 'Authorize User'}
               </button>
-            )}
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold">Users</h2>
-        </div>
+      <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assigned Site
-                </th>
-                {canEdit && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-                )}
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Identity</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">Auth Role</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">Deployment</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map(user => (
-                <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {user.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                      user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {user.role === 'admin' ? 'Company Admin' :
-                       user.role === 'manager' ? 'Manager' : 'Site Manager'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.assignedSite || '-'}
-                  </td>
-                  {canEdit && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                  )}
-                </tr>
-              ))}
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+              {users.map(user => {
+                const assignedSiteName = sites.find(s => Number(s.id) === Number(user.assignedSite))?.siteName || 'Global'
+                return (
+                  <tr key={user.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                          <UsersIcon size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{user.name} {user.surname}</p>
+                          <p className="text-xs font-medium text-slate-500">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                        user.role === 'admin' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' :
+                        user.role === 'manager' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' :
+                        'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{assignedSiteName}</p>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      {canEdit && (
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleEdit(user)} className="p-2 text-slate-300 hover:text-blue-600 transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-300 hover:text-rose-600 transition-colors"><Trash2 size={16} /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function SummaryCard({ label, value, icon, color }) {
+  const colors = {
+    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20',
+    emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20',
+    violet: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20'
+  }
+  return (
+    <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</p>
+        <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{value}</p>
+      </div>
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${colors[color]}`}>
+        {icon}
       </div>
     </div>
   )

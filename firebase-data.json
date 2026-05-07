@@ -1,8 +1,13 @@
 {
+  "companyInfo": {
+    "companyName": "Mining Logistics Pro",
+    "assignedAdmin": "admin@miningsense.com"
+  },
   "users": {
     "admin_at_miningsense_com": {
       "id": "admin_at_miningsense_com",
-      "name": "System Admin",
+      "name": "System",
+      "surname": "Admin",
       "email": "admin@miningsense.com",
       "password": "admin123",
       "role": "admin",
@@ -10,7 +15,8 @@
     },
     "manager_at_miningsense_com": {
       "id": "manager_at_miningsense_com",
-      "name": "Shift Manager",
+      "name": "Shift",
+      "surname": "Manager",
       "email": "manager@miningsense.com",
       "password": "admin123",
       "role": "manager",
@@ -18,7 +24,8 @@
     },
     "site1_at_miningsense_com": {
       "id": "site1_at_miningsense_com",
-      "name": "Site Manager 1",
+      "name": "John",
+      "surname": "Doe",
       "email": "site1@miningsense.com",
       "password": "admin123",
       "role": "siteManager",
@@ -27,26 +34,34 @@
     },
     "site2_at_miningsense_com": {
       "id": "site2_at_miningsense_com",
-      "name": "Site Manager 2",
+      "name": "Jane",
+      "surname": "Smith",
       "email": "site2@miningsense.com",
       "password": "admin123",
       "role": "siteManager",
       "assignedSite": 102,
       "company": "Mining Logistics Pro"
+    }
+  },
+  "mines": {
+    "1": {
+      "id": 1,
+      "name": "Witbank North",
+      "operation": "Opencast",
+      "location": "Mpumalanga"
     },
-    "site3_at_miningsense_com": {
-      "id": "site3_at_miningsense_com",
-      "name": "Site Manager 3",
-      "email": "site3@miningsense.com",
-      "password": "admin123",
-      "role": "siteManager",
-      "company": "Mining Logistics Pro"
+    "2": {
+      "id": 2,
+      "name": "Steelpoort Mine",
+      "operation": "Underground",
+      "location": "Limpopo"
     }
   },
   "sites": {
     "101": {
       "id": 101,
       "siteName": "Coal Pit A",
+      "mineId": 1,
       "mineName": "Witbank North",
       "resource": "Coal",
       "dailyTarget": 1200,
@@ -55,6 +70,7 @@
     "102": {
       "id": 102,
       "siteName": "Chrome East",
+      "mineId": 2,
       "mineName": "Steelpoort Mine",
       "resource": "Chrome",
       "dailyTarget": 850,
@@ -75,20 +91,14 @@
       "type": "Hauler",
       "capacity": 90,
       "status": "Active"
-    },
-    "T03": {
-      "id": "T03",
-      "truckName": "Scania G440 (T03)",
-      "type": "Tipper",
-      "capacity": 32,
-      "status": "Active"
     }
   },
   "projects": {
     "P01": {
       "id": "P01",
       "projectName": "Coal Haulage Phase 1",
-      "mine": "Witbank North",
+      "mineId": 1,
+      "mineName": "Witbank North",
       "status": "Active"
     }
   }

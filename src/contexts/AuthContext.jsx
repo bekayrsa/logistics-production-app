@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { readData } from '../lib/db';
 import { APP_MODE } from '../config';
@@ -86,6 +87,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resetPassword = async (email) => {
+    if (isDemo) {
+      throw new Error("Password reset is not available in Demo Mode.");
+    } else if (auth) {
+      return sendPasswordResetEmail(auth, email);
+    } else {
+      throw new Error("Firebase Auth is not initialized.");
+    }
+  };
+
   const logout = async () => {
     if (isDemo) {
       saveData('currentUser', null);
@@ -99,6 +110,7 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     login,
     signup,
+    resetPassword,
     logout,
     loading
   };
