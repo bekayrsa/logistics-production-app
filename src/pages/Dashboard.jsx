@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dataService } from '../lib/dataService'
 import { exportToCSV } from '../utils/exportUtils'
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Truck, 
-  MapPin, 
-  AlertTriangle, 
-  CheckCircle2, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Truck,
+  MapPin,
+  AlertTriangle,
+  CheckCircle2,
   Calendar,
   Layers,
   ArrowRight,
@@ -18,13 +18,13 @@ import {
   FileText,
   MessageSquare
 } from 'lucide-react'
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Cell
 } from 'recharts'
@@ -72,7 +72,7 @@ function Dashboard({ currentUser }) {
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
           setAvailableSites(sitesData)
         } else if (currentUser.role === 'siteManager') {
-          const userAssigned = Array.isArray(currentUser.assignedSites) 
+          const userAssigned = Array.isArray(currentUser.assignedSites)
             ? currentUser.assignedSites.map(id => Number(id))
             : [Number(currentUser.assignedSite)]
           setAvailableSites(sitesData.filter(s => userAssigned.includes(Number(s.id))))
@@ -80,10 +80,10 @@ function Dashboard({ currentUser }) {
 
         // 2. Initial role-based isolation (Site Managers NEVER see other sites)
         if (currentUser.role === 'siteManager') {
-          const userAssigned = Array.isArray(currentUser.assignedSites) 
+          const userAssigned = Array.isArray(currentUser.assignedSites)
             ? currentUser.assignedSites.map(id => Number(id))
             : [Number(currentUser.assignedSite)]
-          
+
           history = history.filter(h => userAssigned.includes(Number(h.siteId)))
           captures = captures.filter(c => userAssigned.includes(Number(c.siteId)))
         }
@@ -95,17 +95,17 @@ function Dashboard({ currentUser }) {
         }
 
         const today = new Date().toISOString().split('T')[0]
-        
+
         // 4. Calculate Live Site Performance from Captures + Sites
         // We iterate through all available sites and aggregate captures for each
         const livePerformance = availableSites.map(site => {
-          const siteCaptures = captures.filter(c => 
-            c.date === today && 
+          const siteCaptures = captures.filter(c =>
+            c.date === today &&
             Number(c.siteId) === Number(site.id)
           )
           const actual = siteCaptures.reduce((sum, c) => sum + Number(c.tons || 0), 0)
           const target = Number(site.dailyTarget || 0)
-          
+
           return {
             id: site.id,
             siteName: site.siteName,
@@ -117,18 +117,18 @@ function Dashboard({ currentUser }) {
         })
 
         // Filter live performance if a specific site is selected
-        const filteredPerformance = selectedSite === 'all' 
-          ? livePerformance 
+        const filteredPerformance = selectedSite === 'all'
+          ? livePerformance
           : livePerformance.filter(p => Number(p.id) === Number(selectedSite))
 
         // Calculate Stats based on live data
         const totalTons = filteredPerformance.reduce((sum, p) => sum + p.actual, 0)
         const totalTarget = filteredPerformance.reduce((sum, p) => sum + p.target, 0)
-        
+
         const onTarget = filteredPerformance.filter(p => p.actual >= p.target && p.target > 0).length
         const belowTarget = filteredPerformance.filter(p => p.actual < p.target && p.target > 0).length
         const trucksUsed = [...new Set(captures.filter(c => c.date === today).map(c => c.truckId))].length
-        
+
         const progress = totalTarget > 0 ? Math.round((totalTons / totalTarget) * 100) : 0
 
         setStats({
@@ -154,7 +154,7 @@ function Dashboard({ currentUser }) {
         const sortedCaptures = [...captures].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
 
         setProductionHistory(sortedHistory)
-        setRecentCaptures(sortedCaptures.slice(0, 5)) 
+        setRecentCaptures(sortedCaptures.slice(0, 5))
         setSitePerformance(filteredPerformance)
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err)
@@ -196,7 +196,7 @@ function Dashboard({ currentUser }) {
         <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium mb-8">
           Your account has not been assigned to any production sites yet. Please contact your administrator to gain access to site data.
         </p>
-        <button 
+        <button
           onClick={() => navigate('/settings')}
           className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs"
         >
@@ -213,7 +213,7 @@ function Dashboard({ currentUser }) {
     <div className="space-y-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => exportToCSV(sitePerformance, `executive_summary_${new Date().toISOString().split('T')[0]}.csv`)}
             className="flex items-center gap-2 px-5 py-3 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-600/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
           >
@@ -224,7 +224,7 @@ function Dashboard({ currentUser }) {
           {availableSites.length > 1 && (
             <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800/50">
               <MapPin size={18} className="text-blue-600" />
-              <select 
+              <select
                 value={selectedSite}
                 onChange={(e) => setSelectedSite(e.target.value)}
                 className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 focus:ring-0 cursor-pointer p-0"
@@ -241,30 +241,30 @@ function Dashboard({ currentUser }) {
 
       {/* Top Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Daily Production" 
-          value={`${stats.totalTons.toLocaleString()}t`} 
+        <StatCard
+          title="Daily Production"
+          value={`${stats.totalTons.toLocaleString()}t`}
           subtitle={`${stats.todayProgress}% of daily target`}
           icon={<Layers className="text-blue-600" />}
           trend={stats.todayProgress >= 100 ? 'up' : 'down'}
         />
-        <StatCard 
-          title="On Target" 
-          value={stats.onTargetSites} 
+        <StatCard
+          title="On Target"
+          value={stats.onTargetSites}
           subtitle="Sites meeting goals"
           icon={<Target className="text-emerald-600" />}
           color="emerald"
         />
-        <StatCard 
-          title="Below Target" 
-          value={stats.belowTargetSites} 
+        <StatCard
+          title="Below Target"
+          value={stats.belowTargetSites}
           subtitle="Attention required"
           icon={<AlertTriangle className="text-rose-600" />}
           color="rose"
         />
-        <StatCard 
-          title="Active Fleet" 
-          value={stats.activeTrucks} 
+        <StatCard
+          title="Active Fleet"
+          value={stats.activeTrucks}
           subtitle="Vehicles in operation"
           icon={<Truck className="text-violet-600" />}
           color="violet"
@@ -287,9 +287,8 @@ function Dashboard({ currentUser }) {
                 <div key={site.id} className="p-8 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex items-center space-x-5">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
-                        site.actual >= site.target ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30'
-                      }`}>
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${site.actual >= site.target ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30'
+                        }`}>
                         <MapPin size={24} />
                       </div>
                       <div>
@@ -305,17 +304,16 @@ function Dashboard({ currentUser }) {
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Coal Operations</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex-1 max-w-xs px-4">
                       <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
                         <span>Progress</span>
                         <span>{Math.round((site.actual / site.target) * 100)}%</span>
                       </div>
                       <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ${
-                            site.actual >= site.target ? 'bg-emerald-500' : 'bg-rose-500'
-                          }`}
+                        <div
+                          className={`h-full rounded-full transition-all duration-1000 ${site.actual >= site.target ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`}
                           style={{ width: `${Math.min(100, (site.actual / site.target) * 100)}%` }}
                         />
                       </div>
@@ -343,18 +341,18 @@ function Dashboard({ currentUser }) {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={productionHistory}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} 
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
                     tickFormatter={(str) => {
                       const date = new Date(str);
                       return date.toLocaleDateString([], { weekday: 'short' });
                     }}
                   />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: 'transparent' }}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
@@ -404,7 +402,7 @@ function Dashboard({ currentUser }) {
                 </div>
               ))}
             </div>
-            <button 
+            <button
               onClick={() => navigate('/reports')}
               className="w-full mt-8 py-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center"
             >
@@ -432,7 +430,7 @@ function Dashboard({ currentUser }) {
                 <p className="text-xs text-slate-400 text-center py-4">No active briefings.</p>
               )}
             </div>
-            <button 
+            <button
               onClick={() => navigate('/reports')}
               className="w-full mt-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
@@ -462,9 +460,8 @@ function StatCard({ title, value, subtitle, icon, trend, color = 'blue' }) {
           {icon}
         </div>
         {trend && (
-          <div className={`flex items-center px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${
-            trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-          }`}>
+          <div className={`flex items-center px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+            }`}>
             {trend === 'up' ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
             {trend === 'up' ? '+12%' : '-4%'}
           </div>
