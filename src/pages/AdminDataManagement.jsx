@@ -481,17 +481,17 @@ function SitesDatabase() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
         <h3 className="font-bold text-gray-700 dark:text-gray-300">Sites Master Records</h3>
         <button
           onClick={() => exportToCSV(sites, 'production_sites_master.csv')}
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
         >
           <FileText size={14} /> Export Sites
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <th className="px-6 py-3 text-left text-sm font-semibold">Site Name</th>
@@ -638,17 +638,17 @@ function MinesDatabase() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
         <h3 className="font-bold text-gray-700 dark:text-gray-300">Mines Master Records</h3>
         <button
           onClick={() => exportToCSV(mines, 'production_mines_master.csv')}
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
         >
           <FileText size={14} /> Export Mines
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <th className="px-6 py-3 text-left text-sm font-semibold">Mine Name</th>
@@ -763,17 +763,17 @@ function TrucksDatabase() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
         <h3 className="font-bold text-gray-700 dark:text-gray-300">Fleet Master Records</h3>
         <button
           onClick={() => exportToCSV(trucks, 'production_trucks_master.csv')}
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
         >
           <FileText size={14} /> Export Trucks
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <th className="px-6 py-3 text-left text-sm font-semibold">Truck</th>
@@ -915,17 +915,17 @@ function UsersDatabase() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
         <h3 className="font-bold text-gray-700 dark:text-gray-300">User Access Control</h3>
         <button
           onClick={() => exportToCSV(users, 'production_users_master.csv')}
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
         >
           <FileText size={14} /> Export Users
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
@@ -1074,17 +1074,17 @@ function ProjectsDatabase() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
         <h3 className="font-bold text-gray-700 dark:text-gray-300">Project Initiatives</h3>
         <button
           onClick={() => exportToCSV(projects, 'production_projects_master.csv')}
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md text-xs font-bold hover:bg-emerald-700 transition-colors"
         >
           <FileText size={14} /> Export Projects
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <th className="px-6 py-3 text-left text-sm font-semibold">Project</th>

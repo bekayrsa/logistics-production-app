@@ -256,6 +256,62 @@ function Settings({ currentUser }) {
               <section className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-4 mb-10">
                   <div className="w-16 h-16 rounded-3xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600">
+                    <Monitor size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Visual Theme</h3>
+                    <p className="text-sm font-medium text-slate-500">Customize the application interface appearance</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => {
+                      document.documentElement.classList.remove('dark')
+                      localStorage.setItem('darkMode', 'false')
+                      window.dispatchEvent(new Event('storage')) // Trigger sync with Layout
+                    }}
+                    className={`flex items-center justify-between p-6 rounded-[2rem] border transition-all ${
+                      !document.documentElement.classList.contains('dark')
+                        ? 'bg-white border-blue-600 shadow-xl shadow-blue-600/10'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-500">
+                        <Sun size={20} />
+                      </div>
+                      <span className="font-bold text-sm dark:text-white">Light Mode</span>
+                    </div>
+                    {!document.documentElement.classList.contains('dark') && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      document.documentElement.classList.add('dark')
+                      localStorage.setItem('darkMode', 'true')
+                      window.dispatchEvent(new Event('storage')) // Trigger sync with Layout
+                    }}
+                    className={`flex items-center justify-between p-6 rounded-[2rem] border transition-all ${
+                      document.documentElement.classList.contains('dark')
+                        ? 'bg-slate-900 border-blue-600 shadow-xl shadow-blue-600/10'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-blue-400">
+                        <Moon size={20} />
+                      </div>
+                      <span className="font-bold text-sm dark:text-white">Dark Mode</span>
+                    </div>
+                    {document.documentElement.classList.contains('dark') && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="w-16 h-16 rounded-3xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600">
                     <Bell size={32} />
                   </div>
                   <div>

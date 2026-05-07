@@ -424,7 +424,7 @@ function Reports({ currentUser }) {
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[800px]">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50">
                 <th 
