@@ -29,30 +29,34 @@ export const AuthProvider = ({ children }) => {
     } else if (auth) {
       // Live Mode: Firebase Auth
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        setLoading(true); // Ensure loading starts
         if (user) {
           try {
-            // Standardized safeId: replace @ and . with _
+            const isOwner = user.email === 'boiketloramaobi@gmail.com' || user.email === 'boiketloramoabi@gmail.com';
             const safeId = user.email.replace(/[@.]/g, '_');
             const userData = await readData(`users/${safeId}`);
             
             if (userData) {
-              setCurrentUser({ ...user, ...userData, role: user.email === 'boiketloramaobi@gmail.com' ? 'admin' : userData.role });
-            } else {
+              setCurrentUser({ ...user, ...userData, role: isOwner ? 'admin' : userData.role });
+            } else if (isOwner) {
               // Superadmin Override: Force admin role for the owner even if DB record is missing
-              if (user.email === 'boiketloramaobi@gmail.com') {
-                setCurrentUser({ ...user, role: 'admin', name: 'System', surname: 'Owner' });
-              } else {
-                setCurrentUser(user);
-              }
+              setCurrentUser({ ...user, role: 'admin', name: 'System', surname: 'Owner' });
+            } else {
+              setCurrentUser(user);
             }
           } catch (error) {
             console.error("Error fetching user data:", error);
-            setCurrentUser(user);
+            // Even if DB fails, allow owner in
+            if (user.email === 'boiketloramaobi@gmail.com' || user.email === 'boiketloramoabi@gmail.com') {
+              setCurrentUser({ ...user, role: 'admin', name: 'System', surname: 'Owner' });
+            } else {
+              setCurrentUser(user);
+            }
           }
         } else {
           setCurrentUser(null);
         }
-        setLoading(false);
+        setLoading(false); // ALWAYS set loading to false here
       });
       return unsubscribe;
     } else {
@@ -78,11 +82,12 @@ export const AuthProvider = ({ children }) => {
         const user = userCredential.user;
         
         // Immediate authority verification
+        const isOwner = user.email === 'boiketloramaobi@gmail.com' || user.email === 'boiketloramoabi@gmail.com';
         const safeId = user.email.replace(/[@.]/g, '_');
         let userData = await readData(`users/${safeId}`);
         
         // SELF-PROVISIONING BYPASS: If this is the owner email and no record exists, CREATE it.
-        if (!userData && user.email === 'boiketloramaobi@gmail.com') {
+        if (!userData && isOwner) {
           userData = {
             id: safeId,
             name: 'System',
@@ -94,7 +99,7 @@ export const AuthProvider = ({ children }) => {
           await writeData(`users/${safeId}`, userData);
         }
         
-        if (!userData) {
+        if (!userData && !isOwner) {
           await signOut(auth);
           throw new Error('Account verified, but no operational profile (Role) was found. Please contact an Administrator to assign your permissions.');
         }
