@@ -15,7 +15,7 @@ between head office and site personnel.
 2. ACCESS CREDENTIALS (DEMO DATASET)
 -----------------------------------------------------
 ROLE: ADMINISTRATOR (Full System Access)
-Email: admin@miningsense.com
+Email: boiketloramaobi@gmail.com
 Password: admin123
 Capabilities: User Management, Infrastructure, Master Data, Global Analytics
 

@@ -60,7 +60,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     if (isDemo) {
-      // Fake Login Logic
       const users = getData('users') || [];
       const user = users.find(u => u.email === email);
       if (user) {
@@ -68,10 +67,26 @@ export const AuthProvider = ({ children }) => {
         setCurrentUser(user);
         return user;
       } else {
-        throw new Error('User not found in demo data.');
+        throw new Error('Identity not found in demo records.');
       }
     } else if (auth) {
-      return signInWithEmailAndPassword(auth, email, password);
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Immediate authority verification
+        const safeId = user.email.replace(/[@.]/g, '_');
+        const userData = await readData(`users/${safeId}`);
+        
+        if (!userData) {
+          await signOut(auth); // Boot them out if no authority profile exists
+          throw new Error('Account verified, but no operational profile (Role) was found in the database. Contact Administrator.');
+        }
+        
+        return userCredential;
+      } catch (error) {
+        throw error;
+      }
     } else {
       throw new Error("Firebase Auth is not initialized. Please configure your API key.");
     }

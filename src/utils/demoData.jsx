@@ -62,7 +62,7 @@ export function loadDemoData() {
 
   // 5. Users (Employees: 2 Managers, Multiple Site Managers)
   const users = [
-    { id: 1, name: 'System Admin', email: 'admin@miningsense.com', role: 'admin' },
+    { id: 1, name: 'System Admin', email: 'boiketloramaobi@gmail.com', role: 'admin' },
     // Managers
     { id: 2, name: 'Sipho Gumede', email: 'sipho.g@miningsense.com', role: 'manager' },
     { id: 3, name: 'Adrienne Smith', email: 'adrienne.s@miningsense.com', role: 'manager' },

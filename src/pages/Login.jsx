@@ -74,9 +74,15 @@ function Login() {
         <div className="bg-slate-900/50 backdrop-blur-2xl border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 duration-700">
           
           {error && (
-            <div className="mb-8 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-start space-x-3 text-rose-400">
-              <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              <p className="text-xs font-bold leading-tight">{error}</p>
+            <div className="mb-8 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col space-y-2 text-rose-400">
+              <div className="flex items-start space-x-3">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                <p className="text-xs font-bold leading-tight">{error}</p>
+              </div>
+              <div className="pt-2 border-t border-rose-500/10 text-[9px] font-black uppercase tracking-widest opacity-50 flex justify-between">
+                <span>Mode: {APP_MODE}</span>
+                <span>ID: {email.replace(/[@.]/g, '_')}</span>
+              </div>
             </div>
           )}
 
