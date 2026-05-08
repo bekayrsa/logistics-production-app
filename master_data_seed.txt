@@ -1,0 +1,118 @@
+LOGISTICS PRODUCTION MANAGEMENT - MASTER DATA SEED FILE (ENTERPRISE SCALE)
+====================================================================
+
+1. PROJECTS
+-----------------------------------------------------
+ID,ProjectName,Status
+PRJ001,Northern Corridor Expansion,Active
+PRJ002,Coastal Logistics Hub,Active
+PRJ003,Inland Resource Recovery,Active
+
+2. MINES
+-----------------------------------------------------
+ID,Name,ProjectID,Location
+MNE001,Great North Anthracite,PRJ001,Limpopo
+MNE002,Silverstream Platinum,PRJ001,North West
+MNE003,Deep Rock Chrome,PRJ003,Mpumalanga
+MNE004,Eastern Ridge Coal,PRJ003,Mpumalanga
+MNE005,Blue River Manganese,PRJ002,Northern Cape
+
+3. SITES
+-----------------------------------------------------
+ID,SiteName,MineID,MineName,Resource,DailyTarget,Status
+SIT001,Pit Alpha 1,MNE001,Great North Anthracite,Coal,1200,Active
+SIT002,Pit Bravo 4,MNE001,Great North Anthracite,Coal,850,Active
+SIT003,Silo 9 East,MNE002,Silverstream Platinum,Platinum,450,Active
+SIT004,Chrome Terrace,MNE003,Deep Rock Chrome,Chrome,2100,Active
+SIT005,Ridge North,MNE004,Eastern Ridge Coal,Coal,1500,Active
+SIT006,Ridge South,MNE004,Eastern Ridge Coal,Coal,1300,Active
+SIT007,River Wash,MNE005,Blue River Manganese,Manganese,900,Active
+SIT008,Deep Shaft 2,MNE005,Blue River Manganese,Manganese,750,Active
+
+4. TRUCKS (FLEET)
+-----------------------------------------------------
+ID,TruckName,Type,Capacity,Status
+TRK-001,Volvo FMX 440,Articulated Dump,34,Active
+TRK-002,Volvo FMX 440,Articulated Dump,34,Active
+TRK-003,Scania G440,Side-Tipper,32,Active
+TRK-004,Scania G440,Side-Tipper,32,Active
+TRK-005,Mercedes Actros,Rigid Body,28,Active
+TRK-006,Mercedes Actros,Rigid Body,28,Active
+TRK-007,Bell B40E,Articulated Dump,40,Active
+TRK-008,Bell B40E,Articulated Dump,40,Active
+TRK-009,Iveco Trakker,Side-Tipper,30,Active
+TRK-010,Iveco Trakker,Side-Tipper,30,Active
+
+5. HISTORICAL PRODUCTION LOG (APRIL 2026 - FULL MONTH)
+-----------------------------------------------------
+(Summarized Daily Aggregates for SIT001 & SIT004)
+Date,SiteID,SiteName,TotalTons,Target,Variance%
+2026-04-01,SIT001,Pit Alpha 1,1210,1200,+0.8%
+2026-04-02,SIT001,Pit Alpha 1,1180,1200,-1.6%
+2026-04-03,SIT001,Pit Alpha 1,1205,1200,+0.4%
+2026-04-04,SIT001,Pit Alpha 1,1240,1200,+3.3%
+2026-04-05,SIT001,Pit Alpha 1,1150,1200,-4.1%
+2026-04-06,SIT001,Pit Alpha 1,1220,1200,+1.6%
+2026-04-07,SIT001,Pit Alpha 1,1200,1200,0.0%
+2026-04-08,SIT001,Pit Alpha 1,1230,1200,+2.5%
+2026-04-09,SIT001,Pit Alpha 1,1190,1200,-0.8%
+2026-04-10,SIT001,Pit Alpha 1,1215,1200,+1.2%
+2026-04-11,SIT001,Pit Alpha 1,1260,1200,+5.0%
+2026-04-12,SIT001,Pit Alpha 1,1140,1200,-5.0%
+2026-04-13,SIT001,Pit Alpha 1,1200,1200,0.0%
+2026-04-14,SIT001,Pit Alpha 1,1225,1200,+2.1%
+2026-04-15,SIT001,Pit Alpha 1,1185,1200,-1.2%
+2026-04-16,SIT001,Pit Alpha 1,1240,1200,+3.3%
+2026-04-17,SIT001,Pit Alpha 1,1210,1200,+0.8%
+2026-04-18,SIT001,Pit Alpha 1,1195,1200,-0.4%
+2026-04-19,SIT001,Pit Alpha 1,1235,1200,+2.9%
+2026-04-20,SIT001,Pit Alpha 1,1170,1200,-2.5%
+2026-04-21,SIT001,Pit Alpha 1,1220,1200,+1.6%
+2026-04-22,SIT001,Pit Alpha 1,1205,1200,+0.4%
+2026-04-23,SIT001,Pit Alpha 1,1250,1200,+4.1%
+2026-04-24,SIT001,Pit Alpha 1,1180,1200,-1.6%
+2026-04-25,SIT001,Pit Alpha 1,1215,1200,+1.2%
+2026-04-26,SIT001,Pit Alpha 1,1190,1200,-0.8%
+2026-04-27,SIT001,Pit Alpha 1,1230,1200,+2.5%
+2026-04-28,SIT001,Pit Alpha 1,1200,1200,0.0%
+2026-04-29,SIT001,Pit Alpha 1,1245,1200,+3.7%
+2026-04-30,SIT001,Pit Alpha 1,1210,1200,+0.8%
+
+6. HISTORICAL PRODUCTION LOG (JUNE 2026 - PROJECTED)
+-----------------------------------------------------
+Date,SiteID,SiteName,TotalTons,Target,Status
+2026-06-01,SIT001,Pit Alpha 1,1350,1200,On Target
+2026-06-02,SIT001,Pit Alpha 1,1380,1200,On Target
+2026-06-03,SIT001,Pit Alpha 1,1290,1200,On Target
+2026-06-04,SIT001,Pit Alpha 1,1410,1200,On Target
+2026-06-05,SIT001,Pit Alpha 1,1320,1200,On Target
+
+=====================================================
+BULK IMPORT CSV FORMATS (FOR DATA ONBOARDING TOOL)
+=====================================================
+
+-- COPY SECTION BELOW FOR SITE IMPORT --
+siteName,mineName,resource,dailyTarget,status
+Pit Alpha 1,Great North Anthracite,Coal,1200,Active
+Pit Bravo 4,Great North Anthracite,Coal,850,Active
+Silo 9 East,Silverstream Platinum,Platinum,450,Active
+Chrome Terrace,Deep Rock Chrome,Chrome,2100,Active
+Ridge North,Eastern Ridge Coal,Coal,1500,Active
+Ridge South,Eastern Ridge Coal,Coal,1300,Active
+River Wash,Blue River Manganese,Manganese,900,Active
+Deep Shaft 2,Blue River Manganese,Manganese,750,Active
+
+-- COPY SECTION BELOW FOR TRUCK IMPORT --
+truckName,truckType,capacity,status
+Volvo FMX 440,Articulated Dump,34,Active
+Scania G440,Side-Tipper,32,Active
+Mercedes Actros,Rigid Body,28,Active
+Bell B40E,Articulated Dump,40,Active
+Iveco Trakker,Side-Tipper,30,Active
+
+-- COPY SECTION BELOW FOR USER IMPORT --
+name,surname,email,password,role,assignedSite
+John,Smith,site1@miningsense.com,site123,siteManager,SIT001
+David,Kruger,site2@miningsense.com,site123,siteManager,SIT002
+Michael,Botha,site3@miningsense.com,site123,siteManager,SIT003
+Lerato,Mokoena,site4@miningsense.com,site123,siteManager,SIT005

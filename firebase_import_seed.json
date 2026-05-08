@@ -1,0 +1,74 @@
+{
+  "projects": {
+    "PRJ001": { "id": "PRJ001", "ProjectName": "Northern Corridor Expansion", "Status": "Active" },
+    "PRJ002": { "id": "PRJ002", "ProjectName": "Coastal Logistics Hub", "Status": "Active" },
+    "PRJ003": { "id": "PRJ003", "ProjectName": "Inland Resource Recovery", "Status": "Active" }
+  },
+  "mines": {
+    "MNE001": { "id": "MNE001", "name": "Great North Anthracite", "ProjectID": "PRJ001", "Location": "Limpopo" },
+    "MNE002": { "id": "MNE002", "name": "Silverstream Platinum", "ProjectID": "PRJ001", "Location": "North West" },
+    "MNE003": { "id": "MNE003", "name": "Deep Rock Chrome", "ProjectID": "PRJ003", "Location": "Mpumalanga" },
+    "MNE004": { "id": "MNE004", "name": "Eastern Ridge Coal", "ProjectID": "PRJ003", "Location": "Mpumalanga" },
+    "MNE005": { "id": "MNE005", "name": "Blue River Manganese", "ProjectID": "PRJ002", "Location": "Northern Cape" }
+  },
+  "sites": {
+    "SIT001": { "id": "SIT001", "siteName": "Pit Alpha 1", "mineId": "MNE001", "mineName": "Great North Anthracite", "resource": "Coal", "dailyTarget": 1200, "status": "Active" },
+    "SIT002": { "id": "SIT002", "siteName": "Pit Bravo 4", "mineId": "MNE001", "mineName": "Great North Anthracite", "resource": "Coal", "dailyTarget": 850, "status": "Active" },
+    "SIT003": { "id": "SIT003", "siteName": "Silo 9 East", "mineId": "MNE002", "mineName": "Silverstream Platinum", "resource": "Platinum", "dailyTarget": 450, "status": "Active" },
+    "SIT004": { "id": "SIT004", "siteName": "Chrome Terrace", "mineId": "MNE003", "mineName": "Deep Rock Chrome", "resource": "Chrome", "dailyTarget": 2100, "status": "Active" },
+    "SIT005": { "id": "SIT005", "siteName": "Ridge North", "mineId": "MNE004", "mineName": "Eastern Ridge Coal", "resource": "Coal", "dailyTarget": 1500, "status": "Active" },
+    "SIT006": { "id": "SIT006", "siteName": "Ridge South", "mineId": "MNE004", "mineName": "Eastern Ridge Coal", "resource": "Coal", "dailyTarget": 1300, "status": "Active" },
+    "SIT007": { "id": "SIT007", "siteName": "River Wash", "mineId": "MNE005", "mineName": "Blue River Manganese", "resource": "Manganese", "dailyTarget": 900, "status": "Active" },
+    "SIT008": { "id": "SIT008", "siteName": "Deep Shaft 2", "mineId": "MNE005", "mineName": "Blue River Manganese", "resource": "Manganese", "dailyTarget": 750, "status": "Active" }
+  },
+  "trucks": {
+    "TRK001": { "id": "TRK001", "truckName": "Volvo FMX 440", "truckType": "Articulated Dump", "capacity": 34, "status": "Active" },
+    "TRK002": { "id": "TRK002", "truckName": "Volvo FMX 441", "truckType": "Articulated Dump", "capacity": 34, "status": "Active" },
+    "TRK003": { "id": "TRK003", "truckName": "Scania G440", "truckType": "Side-Tipper", "capacity": 32, "status": "Active" },
+    "TRK004": { "id": "TRK004", "truckName": "Scania G441", "truckType": "Side-Tipper", "capacity": 32, "status": "Active" },
+    "TRK005": { "id": "TRK005", "truckName": "Mercedes Actros 1", "truckType": "Rigid Body", "capacity": 28, "status": "Active" },
+    "TRK006": { "id": "TRK006", "truckName": "Mercedes Actros 2", "truckType": "Rigid Body", "capacity": 28, "status": "Active" },
+    "TRK007": { "id": "TRK007", "truckName": "Bell B40E-1", "truckType": "Articulated Dump", "capacity": 40, "status": "Active" },
+    "TRK008": { "id": "TRK008", "truckName": "Bell B40E-2", "truckType": "Articulated Dump", "capacity": 40, "status": "Active" }
+  },
+  "users": {
+    "USR001": { "id": "USR001", "name": "Admin", "surname": "User", "email": "admin@miningsense.com", "role": "admin" },
+    "USR002": { "id": "USR002", "name": "Sarah", "surname": "Manager", "email": "manager@miningsense.com", "role": "manager" },
+    "USR003": { "id": "USR003", "name": "John", "surname": "Smith", "email": "site1@miningsense.com", "role": "siteManager", "assignedSite": "SIT001", "assignedSites": ["SIT001", "SIT002"] },
+    "USR004": { "id": "USR004", "name": "David", "surname": "Kruger", "email": "site2@miningsense.com", "role": "siteManager", "assignedSite": "SIT003" }
+  },
+  "production": {
+    "P_S1_0401": { "id": "P_S1_0401", "date": "2026-04-01", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1210, "target": 1200, "status": "On Target" },
+    "P_S1_0402": { "id": "P_S1_0402", "date": "2026-04-02", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1150, "target": 1200, "status": "Below Target" },
+    "P_S1_0403": { "id": "P_S1_0403", "date": "2026-04-03", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1240, "target": 1200, "status": "On Target" },
+    "P_S4_0401": { "id": "P_S4_0401", "date": "2026-04-01", "siteId": "SIT004", "siteName": "Chrome Terrace", "actual": 2150, "target": 2100, "status": "On Target" },
+    "P_S4_0402": { "id": "P_S4_0402", "date": "2026-04-02", "siteId": "SIT004", "siteName": "Chrome Terrace", "actual": 1900, "target": 2100, "status": "Below Target" },
+    "P_S5_0401": { "id": "P_S5_0401", "date": "2026-04-01", "siteId": "SIT005", "siteName": "Ridge North", "actual": 1550, "target": 1500, "status": "On Target" },
+    "P_S5_0402": { "id": "P_S5_0402", "date": "2026-04-02", "siteId": "SIT005", "siteName": "Ridge North", "actual": 1420, "target": 1500, "status": "Below Target" },
+    "P_S1_0501": { "id": "P_S1_0501", "date": "2026-05-01", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1180, "target": 1200, "status": "Below Target" },
+    "P_S1_0502": { "id": "P_S1_0502", "date": "2026-05-02", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1250, "target": 1200, "status": "On Target" },
+    "P_S1_0503": { "id": "P_S1_0503", "date": "2026-05-03", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1210, "target": 1200, "status": "On Target" },
+    "P_S1_0504": { "id": "P_S1_0504", "date": "2026-05-04", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1230, "target": 1200, "status": "On Target" },
+    "P_S1_0505": { "id": "P_S1_0505", "date": "2026-05-05", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1100, "target": 1200, "status": "Below Target" },
+    "P_S1_0506": { "id": "P_S1_0506", "date": "2026-05-06", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1280, "target": 1200, "status": "On Target" },
+    "P_S1_0507": { "id": "P_S1_0507", "date": "2026-05-07", "siteId": "SIT001", "siteName": "Pit Alpha 1", "actual": 1220, "target": 1200, "status": "On Target" }
+  },
+  "captures": {
+    "C_S1_0501_1": { "id": "C_S1_0501_1", "date": "2026-05-01", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK001", "truckName": "Volvo FMX 440", "loads": 10, "tons": 340, "timestamp": 1714550400000, "userName": "John Smith" },
+    "C_S1_0501_2": { "id": "C_S1_0501_2", "date": "2026-05-01", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK003", "truckName": "Scania G440", "loads": 15, "tons": 480, "timestamp": 1714561200000, "userName": "John Smith" },
+    "C_S4_0501_1": { "id": "C_S4_0501_1", "date": "2026-05-01", "siteId": "SIT004", "siteName": "Chrome Terrace", "truckId": "TRK007", "truckName": "Bell B40E-1", "loads": 20, "tons": 800, "timestamp": 1714550400000, "userName": "Sarah Manager" },
+    "C_S1_0507_1": { "id": "C_S1_0507_1", "date": "2026-05-07", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK001", "truckName": "Volvo FMX 440", "loads": 12, "tons": 408, "timestamp": 1715068800000, "userName": "John Smith" },
+    "C_S1_0507_2": { "id": "C_S1_0507_2", "date": "2026-05-07", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK003", "truckName": "Scania G440", "loads": 15, "tons": 480, "timestamp": 1715079600000, "userName": "John Smith" },
+    "C_S1_0507_3": { "id": "C_S1_0507_3", "date": "2026-05-07", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK007", "truckName": "Bell B40E-1", "loads": 8, "tons": 332, "timestamp": 1715090400000, "userName": "John Smith" },
+    "C_S1_0508_1": { "id": "C_S1_0508_1", "date": "2026-05-08", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK001", "truckName": "Volvo FMX 440", "loads": 5, "tons": 170, "timestamp": 1715160000000, "userName": "John Smith" },
+    "C_S1_0508_2": { "id": "C_S1_0508_2", "date": "2026-05-08", "siteId": "SIT001", "siteName": "Pit Alpha 1", "truckId": "TRK002", "truckName": "Volvo FMX 441", "loads": 4, "tons": 136, "timestamp": 1715163600000, "userName": "John Smith" },
+    "C_S4_0508_1": { "id": "C_S4_0508_1", "date": "2026-05-08", "siteId": "SIT004", "siteName": "Chrome Terrace", "truckId": "TRK007", "truckName": "Bell B40E-1", "loads": 10, "tons": 400, "timestamp": 1715160000000, "userName": "David Kruger" },
+    "C_S5_0508_1": { "id": "C_S5_0508_1", "date": "2026-05-08", "siteId": "SIT005", "siteName": "Ridge North", "truckId": "TRK005", "truckName": "Mercedes Actros 1", "loads": 15, "tons": 420, "timestamp": 1715160000000, "userName": "Lerato Mokoena" },
+    "C_S7_0508_1": { "id": "C_S7_0508_1", "date": "2026-05-08", "siteId": "SIT007", "siteName": "River Wash", "truckId": "TRK003", "truckName": "Scania G440", "loads": 8, "tons": 256, "timestamp": 1715160000000, "userName": "Michael Botha" }
+  },
+  "briefings": {
+    "B1": { "id": "B1", "siteId": "SIT001", "siteName": "Pit Alpha 1", "text": "Mechanical failure on primary loading tool. Estimating 4 hours downtime.", "timestamp": 1715167500000, "author": "John Smith", "status": "open" },
+    "B2": { "id": "B2", "siteId": "SIT004", "siteName": "Chrome Terrace", "text": "Heavy rainfall expected tonight. Securing pit walls.", "timestamp": 1715168000000, "author": "David Kruger", "status": "open" },
+    "B3": { "id": "B3", "siteId": "SIT005", "siteName": "Ridge North", "text": "Shift handover complete. All targets met.", "timestamp": 1715169000000, "author": "Lerato Mokoena", "status": "resolved" }
+  }
+}

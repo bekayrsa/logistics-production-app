@@ -1,0 +1,77 @@
+====================================================================
+PRODUCTION MANAGEMENT PRO - ENTERPRISE SYSTEM HANDOVER DOCUMENT
+====================================================================
+Date: May 8, 2026
+Version: 1.0 (Enterprise Release)
+Environment: Production (Firebase Integration)
+
+1. SYSTEM OVERVIEW
+-----------------------------------------------------
+Production Management Pro is a high-fidelity, real-time logistics 
+and mining production tracking platform. It enables multi-site 
+visibility, fleet management, and operational communication 
+between head office and site personnel.
+
+2. ACCESS CREDENTIALS (DEMO DATASET)
+-----------------------------------------------------
+ROLE: ADMINISTRATOR (Full System Access)
+Email: admin@miningsense.com
+Password: admin123
+Capabilities: User Management, Infrastructure, Master Data, Global Analytics
+
+ROLE: HEAD OFFICE MANAGER (Strategic Oversight)
+Email: manager@miningsense.com
+Password: manager123
+Capabilities: All Reports, Briefing Room, Performance Monitoring
+
+ROLE: SITE MANAGER (Operational Capture)
+Email: site1@miningsense.com
+Password: site123
+Assigned Site: Pit Alpha 1
+Capabilities: Live Data Capture, Site-Specific Analytics, Briefing Responses
+
+3. OPERATIONAL PROTOCOLS
+-----------------------------------------------------
+PROTOCOL A: DAILY PRODUCTION CAPTURE
+- Frequency: Real-time per load/shift.
+- Method: Use the "Live Capture" screen to record truck IDs and tons.
+- Requirement: Site Managers must ensure every load is captured before 
+  the end of the shift to maintain live dashboard accuracy.
+
+PROTOCOL B: BRIEFING ROOM (COMMUNICATION)
+- Purpose: Bridge the gap between Admin and the Field.
+- Flow: Admins issue "Operational Notes" -> Site Managers receive 
+  notifications -> Site Managers "Reply" with status -> Admin "Resolves".
+
+PROTOCOL C: MASTER DATA UPDATES
+- Requirement: Use the "Admin Data Management" tool for bulk onboarding.
+- Format: Always use the provided CSV templates in the seed file to 
+  avoid database schema errors.
+
+4. SYSTEM ADMINISTRATION
+-----------------------------------------------------
+PERSONNEL MANAGEMENT:
+Admins are responsible for decommissioning users who leave the company 
+and updating "Assigned Sites" as managers rotate between pits.
+
+FLEET MAINTENANCE:
+The "Fleet" section must be updated whenever a truck is added or removed 
+from a site to ensure Site Managers only see active vehicles.
+
+5. TECHNICAL ARCHITECTURE
+-----------------------------------------------------
+- Frontend: React 18.2 with Tailwind CSS (Responsive Design)
+- Database: Firebase Realtime Database
+- State Management: Real-time subscriptions for zero-latency updates.
+- Theme: Dark Mode support (Managed in Settings).
+
+6. DATA INTEGRITY & SYNC
+-----------------------------------------------------
+The system operates in "Live Mode". All captures are synchronized 
+to the cloud immediately. In the event of a "Connection Offline" 
+banner, continue capturing; the system will attempt to resync 
+once the network is restored.
+
+====================================================================
+CONFIDENTIAL: INTERNAL USE ONLY - MINING SENSE LOGISTICS
+====================================================================
