@@ -2,28 +2,43 @@
   "rules": {
     ".read": "auth != null",
     "users": {
-      ".indexOn": ["email", "role"],
+      ".indexOn": [
+        "email",
+        "role"
+      ],
       "$user_id": {
         ".write": "auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email.replace('.', '_').replace('@', '_') == $user_id"
       }
     },
     "sites": {
-      ".indexOn": ["status"],
+      ".indexOn": [
+        "status"
+      ],
       ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
     },
     "trucks": {
-      ".indexOn": ["status", "type"],
+      ".indexOn": [
+        "status",
+        "type"
+      ],
       ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
     },
     "projects": {
       ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
     },
     "captures": {
-      ".indexOn": ["date", "siteId", "truckId"],
+      ".indexOn": [
+        "date",
+        "siteId",
+        "truckId"
+      ],
       ".write": "auth != null"
     },
     "production": {
-      ".indexOn": ["date", "siteId"],
+      ".indexOn": [
+        "date",
+        "siteId"
+      ],
       ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'manager' || auth.token.email == 'boiketloramaobi@gmail.com'"
     },
     "briefings": {
