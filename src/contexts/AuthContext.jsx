@@ -36,11 +36,14 @@ export const AuthProvider = ({ children }) => {
             const userData = await readData(`users/${safeId}`);
             
             if (userData) {
-              setCurrentUser({ ...user, ...userData });
+              setCurrentUser({ ...user, ...userData, role: user.email === 'boiketloramaobi@gmail.com' ? 'admin' : userData.role });
             } else {
-              // User exists in Auth but not in Database record yet
-              console.warn("User record not found in database for ID:", safeId);
-              setCurrentUser(user);
+              // Superadmin Override: Force admin role for the owner even if DB record is missing
+              if (user.email === 'boiketloramaobi@gmail.com') {
+                setCurrentUser({ ...user, role: 'admin', name: 'System', surname: 'Owner' });
+              } else {
+                setCurrentUser(user);
+              }
             }
           } catch (error) {
             console.error("Error fetching user data:", error);

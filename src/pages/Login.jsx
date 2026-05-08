@@ -163,19 +163,27 @@ function Login() {
           </form>
         </div>
 
-        {/* Subtle Mode Switcher */}
-        <div className="mt-8 flex flex-col items-center space-y-4">
-          <button
-            onClick={() => {
-              const nextMode = APP_MODE === 'demo' ? 'production' : 'demo';
-              localStorage.setItem('app_mode', nextMode);
-              window.location.reload();
-            }}
-            className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-400 transition-colors flex items-center bg-slate-900/30 px-4 py-2 rounded-full border border-slate-800"
-          >
-            <RefreshCw size={12} className="mr-2" />
-            Mode: {APP_MODE === 'demo' ? 'Sandboxed Demo' : 'Live Production'}
-          </button>
+          {/* Mode Indicator & Switcher */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className={`px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${
+              APP_MODE === 'production' 
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' 
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+            }`}>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${APP_MODE === 'production' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              System Status: {APP_MODE === 'production' ? 'Live Production' : 'Sandbox Demo'}
+            </div>
+
+            <button
+              onClick={() => {
+                const nextMode = APP_MODE === 'demo' ? 'production' : 'demo';
+                localStorage.setItem('app_mode', nextMode);
+                window.location.reload();
+              }}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+            >
+              Switch to {APP_MODE === 'demo' ? 'Live Production' : 'Sandbox Demo'}
+            </button>
 
           {APP_MODE === 'demo' && (
             <div className="w-full p-6 bg-amber-500/5 border border-amber-500/10 rounded-3xl text-center">
