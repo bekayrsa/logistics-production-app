@@ -79,11 +79,24 @@ export const AuthProvider = ({ children }) => {
         
         // Immediate authority verification
         const safeId = user.email.replace(/[@.]/g, '_');
-        const userData = await readData(`users/${safeId}`);
+        let userData = await readData(`users/${safeId}`);
+        
+        // SELF-PROVISIONING BYPASS: If this is the owner email and no record exists, CREATE it.
+        if (!userData && user.email === 'boiketloramaobi@gmail.com') {
+          userData = {
+            id: safeId,
+            name: 'System',
+            surname: 'Owner',
+            email: user.email,
+            role: 'admin',
+            createdAt: new Date().toISOString()
+          };
+          await writeData(`users/${safeId}`, userData);
+        }
         
         if (!userData) {
-          await signOut(auth); // Boot them out if no authority profile exists
-          throw new Error('Account verified, but no operational profile (Role) was found in the database. Contact Administrator.');
+          await signOut(auth);
+          throw new Error('Account verified, but no operational profile (Role) was found. Please contact an Administrator to assign your permissions.');
         }
         
         return userCredential;
