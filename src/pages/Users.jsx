@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { APP_MODE } from '../config'
@@ -15,7 +16,7 @@ function Users({ currentUser }) {
     surname: '',
     email: '',
     role: 'siteManager',
-    assignedSite: ''
+    assignedSites: []
   })
 
   const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager'
@@ -23,8 +24,8 @@ function Users({ currentUser }) {
 
   useEffect(() => {
     if (!canView) return
-    const unsubUsers = dataService.subscribeToUsers((data) => setUsers(data))
-    const unsubSites = dataService.subscribeToSites((data) => setSites(data))
+    const unsubUsers = dataService.subscribeToUsers((data) => setUsers(data), currentUser.companyId)
+    const unsubSites = dataService.subscribeToSites((data) => setSites(data), currentUser.companyId)
     return () => {
       unsubUsers()
       unsubSites()
@@ -38,7 +39,7 @@ function Users({ currentUser }) {
     const userData = {
       ...formData,
       id: isEditing ? editingUser.id : (formData.email.replace(/[@.]/g, '_')),
-      companyId: 1
+      companyId: currentUser.companyId
     }
 
     if (!isEditing && APP_MODE !== 'demo' && secondaryAuth) {
@@ -54,10 +55,10 @@ function Users({ currentUser }) {
       }
     }
 
-    await dataService.saveUser(userData)
+    await dataService.saveUser(userData, currentUser.companyId)
     setIsEditing(false)
     setEditingUser(null)
-    setFormData({ name: '', email: '', role: 'siteManager', assignedSite: '' })
+    setFormData({ name: '', email: '', role: 'siteManager', assignedSites: [] })
   }
 
   const handleEdit = (user) => {
@@ -69,7 +70,7 @@ function Users({ currentUser }) {
       surname: user.surname || '',
       email: user.email,
       role: user.role,
-      assignedSite: user.assignedSite || ''
+      assignedSites: user.assignedSites || (user.assignedSite ? [user.assignedSite] : [])
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -77,7 +78,7 @@ function Users({ currentUser }) {
   const handleDelete = async (userId) => {
     if (window.confirm('Confirm permanent deletion of this user profile?')) {
       try {
-        await dataService.deleteUser(userId)
+        await dataService.deleteUser(userId, currentUser.companyId)
       } catch (err) {
         alert('Deletion failed: ' + err.message)
       }
@@ -87,7 +88,7 @@ function Users({ currentUser }) {
   const handleCancel = () => {
     setIsEditing(false)
     setEditingUser(null)
-    setFormData({ name: '', surname: '', email: '', role: 'siteManager', assignedSite: '' })
+    setFormData({ name: '', surname: '', email: '', role: 'siteManager', assignedSites: [] })
   }
 
   if (!canView) {
@@ -164,16 +165,40 @@ function Users({ currentUser }) {
                 <option value="siteManager">Field Site Manager</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Deployment Assignment</label>
-              <select 
-                value={formData.assignedSite}
-                onChange={e => setFormData(prev => ({ ...prev, assignedSite: e.target.value }))}
-                className="w-full px-8 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-600 dark:text-white appearance-none"
-              >
-                <option value="">Global/Administrative Access</option>
-                {sites.map(site => <option key={site.id} value={site.id}>{site.siteName}</option>)}
-              </select>
+            <div className="lg:col-span-2 space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Authorized Site Assignments (Multi-Select)</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sites.map(site => (
+                  <label 
+                    key={site.id} 
+                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                      formData.assignedSites.includes(site.id)
+                        ? 'bg-blue-50 border-blue-600 text-blue-700 dark:bg-blue-900/20'
+                        : 'bg-slate-50 border-transparent text-slate-500 dark:bg-slate-800'
+                    }`}
+                  >
+                    <input 
+                      type="checkbox"
+                      className="hidden"
+                      checked={!!formData.assignedSites?.[String(site.id)]}
+                      onChange={() => {
+                        const siteIdStr = String(site.id)
+                        const nextSites = { ...(formData.assignedSites || {}) }
+                        if (nextSites[siteIdStr]) delete nextSites[siteIdStr]
+                        else nextSites[siteIdStr] = true
+                        setFormData(prev => ({ ...prev, assignedSites: nextSites }))
+                      }}
+                    />
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                      formData.assignedSites?.[String(site.id)] ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                    }`}>
+                      {formData.assignedSites?.[String(site.id)] && <BadgeCheck size={12} className="text-white" />}
+                    </div>
+                    <span className="text-xs font-bold">{site.siteName}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[9px] font-medium text-slate-400 ml-4">Admins and Managers ignore site restrictions. Site Managers only see data for these selected sites.</p>
             </div>
             <div className="lg:col-span-2 flex justify-end gap-4 pt-4">
               {isEditing && (
@@ -234,7 +259,23 @@ function Users({ currentUser }) {
                       </span>
                     </td>
                     <td className="px-8 py-6 text-center">
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{assignedSiteName}</p>
+                      <div className="flex flex-wrap justify-center gap-1 max-w-[200px] mx-auto">
+                        {user.role === 'admin' || user.role === 'manager' ? (
+                          <span className="text-xs font-bold text-slate-400">Full Access</span>
+                        ) : (
+                          Object.keys(user.assignedSites || {}).filter(Boolean).map(siteId => {
+                            const sName = sites.find(s => String(s.id) === String(siteId))?.siteName || 'Unknown'
+                            return (
+                              <span key={siteId} className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400">
+                                {sName}
+                              </span>
+                            )
+                          })
+                        )}
+                        {!(user.assignedSites?.length || user.assignedSite) && user.role === 'siteManager' && (
+                          <span className="text-[10px] italic text-rose-400">No Sites Assigned</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-8 py-6 text-right">
                       {canEdit && (

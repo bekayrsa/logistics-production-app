@@ -2,47 +2,35 @@
   "rules": {
     ".read": "auth != null",
     "users": {
-      ".indexOn": [
-        "email",
-        "role"
-      ],
+      ".indexOn": ["email", "role"],
       "$user_id": {
-        ".write": "auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email.replace('.', '_').replace('@', '_') == $user_id"
+        ".write": "auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email == 'boiketloramoabi@gmail.com' || auth.token.email.replace('.', '_').replace('@', '_') == $user_id"
       }
     },
-    "sites": {
-      ".indexOn": [
-        "status"
-      ],
-      ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
-    },
-    "trucks": {
-      ".indexOn": [
-        "status",
-        "type"
-      ],
-      ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
-    },
-    "projects": {
-      ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
-    },
-    "captures": {
-      ".indexOn": [
-        "date",
-        "siteId",
-        "truckId"
-      ],
-      ".write": "auth != null"
-    },
-    "production": {
-      ".indexOn": [
-        "date",
-        "siteId"
-      ],
-      ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'manager' || auth.token.email == 'boiketloramaobi@gmail.com'"
-    },
-    "briefings": {
-      ".write": "auth != null"
+    "companies": {
+      "$companyId": {
+        ".read": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId || auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email == 'boiketloramoabi@gmail.com'",
+        ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId || auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email == 'boiketloramoabi@gmail.com'",
+        "sites": { 
+          ".indexOn": ["status"],
+          "$siteId": {
+            ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
+          }
+        },
+        "trucks": { ".indexOn": ["status", "type"] },
+        "captures": { 
+          ".indexOn": ["date", "siteId", "truckId"],
+          "$captureId": {
+            ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists() || auth.token.email == 'boiketloramaobi@gmail.com'"
+          }
+        },
+        "production": { 
+          ".indexOn": ["date", "siteId"],
+          "$prodId": {
+            ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'manager' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists() || auth.token.email == 'boiketloramaobi@gmail.com'"
+          }
+        }
+      }
     }
   }
 }

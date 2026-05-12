@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { exportToCSV } from '../utils/exportUtils'
@@ -27,14 +28,14 @@ function SitePerformance({ currentUser }) {
       if (!currentUser) return
       
       const [sitesData, productionData] = await Promise.all([
-        dataService.getSites(),
-        dataService.getProduction()
+        dataService.getSites(currentUser.companyId),
+        dataService.getProduction(currentUser.companyId)
       ])
 
       let sites = sitesData
       if (currentUser.role === 'siteManager') {
-        const assignedSiteId = Number(currentUser.assignedSite)
-        sites = sites.filter(site => Number(site.id) === assignedSiteId)
+        const assignedIds = Object.keys(currentUser.assignedSites || {})
+        sites = sites.filter(site => assignedIds.includes(String(site.id)))
       }
       const production = productionData
 
@@ -78,9 +79,9 @@ function SitePerformance({ currentUser }) {
   }, [currentUser, today])
 
   useEffect(() => {
-    const unsub = dataService.subscribeToComments(setComments)
+    const unsub = dataService.subscribeToComments(setComments, currentUser.companyId)
     return () => unsub()
-  }, [])
+  }, [currentUser])
 
   const handleAddComment = async (e) => {
     e.preventDefault()
@@ -97,7 +98,7 @@ function SitePerformance({ currentUser }) {
       timestamp: Date.now()
     }
 
-    await dataService.saveComment(newComment)
+    await dataService.saveComment(newComment, currentUser.companyId)
     setCommentText('')
   }
 

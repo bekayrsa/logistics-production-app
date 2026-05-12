@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { exportToCSV } from '../utils/exportUtils'
@@ -34,18 +35,18 @@ function AdminDataManagement({ currentUser }) {
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
       setCaptures(filtered)
       setLoading(false)
-    })
+    }, currentUser.companyId)
 
     const unsubProduction = dataService.subscribeToProduction((allProduction) => {
       const filtered = allProduction.filter(p => p.date === filterDate)
       setProduction(filtered)
-    })
+    }, currentUser.companyId)
 
     return () => {
       unsubCaptures()
       unsubProduction()
     }
-  }, [filterDate])
+  }, [filterDate, currentUser])
 
   const handleEditCapture = (capture) => {
     setEditingId(capture.id)
@@ -58,7 +59,7 @@ function AdminDataManagement({ currentUser }) {
     try {
       // In production, we'd need a way to update captures.
       // For now, we'll re-save the capture with its original ID
-      await dataService.createCapture(editData) // Assuming createCapture handles updates if ID exists or we add an updateCapture
+      await dataService.createCapture(editData, currentUser.companyId)
 
       // Update local state
       setCaptures(prev => prev.map(c => (c.id === editingId ? editData : c)))
@@ -75,7 +76,7 @@ function AdminDataManagement({ currentUser }) {
   const handleDeleteCapture = async (id) => {
     if (window.confirm('Are you sure you want to delete this capture? This will affect today\'s production totals.')) {
       try {
-        await dataService.deleteCapture(id)
+        await dataService.deleteCapture(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete capture: ' + err.message)
       }
@@ -113,16 +114,17 @@ function AdminDataManagement({ currentUser }) {
           })
 
           // Save based on active tab or auto-detect
+          const itemWithTenant = { ...item, companyId: currentUser.companyId }
           if (activeTab === 'users') {
-            await dataService.saveUser({ ...item, id: item.id || Date.now() + Math.random() })
+            await dataService.saveUser({ ...itemWithTenant, id: item.id || Date.now() + Math.random() })
           } else if (activeTab === 'sites') {
-            await dataService.saveSite({ ...item, id: item.id || Date.now() + Math.random(), dailyTarget: Number(item.dailyTarget) })
+            await dataService.saveSite({ ...itemWithTenant, id: item.id || Date.now() + Math.random(), dailyTarget: Number(item.dailyTarget) }, currentUser.companyId)
           } else if (activeTab === 'trucks') {
-            await dataService.saveTruck({ ...item, id: item.id || Date.now() + Math.random(), capacity: Number(item.capacity) })
+            await dataService.saveTruck({ ...itemWithTenant, id: item.id || Date.now() + Math.random(), capacity: Number(item.capacity) }, currentUser.companyId)
           } else if (activeTab === 'projects') {
-            await dataService.saveProject({ ...item, id: item.id || Date.now() + Math.random() })
+            await dataService.saveProject({ ...itemWithTenant, id: item.id || Date.now() + Math.random() }, currentUser.companyId)
           } else if (activeTab === 'mines') {
-            await dataService.saveMine({ ...item, id: item.id || Date.now() + Math.random() })
+            await dataService.saveMine({ ...itemWithTenant, id: item.id || Date.now() + Math.random() }, currentUser.companyId)
           }
           successCount++
         }
@@ -367,19 +369,19 @@ function AdminDataManagement({ currentUser }) {
       )}
 
       {/* Sites Tab */}
-      {activeTab === 'sites' && <SitesDatabase />}
+      {activeTab === 'sites' && <SitesDatabase currentUser={currentUser} />}
 
       {/* Mines Tab */}
-      {activeTab === 'mines' && <MinesDatabase />}
+      {activeTab === 'mines' && <MinesDatabase currentUser={currentUser} />}
 
       {/* Trucks Tab */}
-      {activeTab === 'trucks' && <TrucksDatabase />}
+      {activeTab === 'trucks' && <TrucksDatabase currentUser={currentUser} />}
 
       {/* Users Tab */}
-      {activeTab === 'users' && <UsersDatabase />}
+      {activeTab === 'users' && <UsersDatabase currentUser={currentUser} />}
 
       {/* Projects Tab */}
-      {activeTab === 'projects' && <ProjectsDatabase />}
+      {activeTab === 'projects' && <ProjectsDatabase currentUser={currentUser} />}
 
       {/* Import Modal */}
       {showImportModal && (
@@ -444,20 +446,20 @@ function AdminDataManagement({ currentUser }) {
   )
 }
 
-function SitesDatabase() {
+function SitesDatabase({ currentUser }) {
   const [sites, setSites] = useState([])
   const [mines, setMines] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
   useEffect(() => {
-    const unsubSites = dataService.subscribeToSites(setSites)
-    const unsubMines = dataService.subscribeToMines(setMines)
+    const unsubSites = dataService.subscribeToSites(setSites, currentUser.companyId)
+    const unsubMines = dataService.subscribeToMines(setMines, currentUser.companyId)
     return () => {
       unsubSites()
       unsubMines()
     }
-  }, [])
+  }, [currentUser])
 
   const handleEdit = (site) => {
     setEditingId(site.id)
@@ -465,14 +467,14 @@ function SitesDatabase() {
   }
 
   const handleSave = async () => {
-    await dataService.saveSite(editData)
+    await dataService.saveSite(editData, currentUser.companyId)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this site? This action cannot be undone.')) {
       try {
-        await dataService.deleteSite(id)
+        await dataService.deleteSite(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete site: ' + err.message)
       }
@@ -606,15 +608,15 @@ function SitesDatabase() {
   )
 }
 
-function MinesDatabase() {
+function MinesDatabase({ currentUser }) {
   const [mines, setMines] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
   useEffect(() => {
-    const unsub = dataService.subscribeToMines((data) => setMines(data))
+    const unsub = dataService.subscribeToMines((data) => setMines(data), currentUser.companyId)
     return () => unsub()
-  }, [])
+  }, [currentUser])
 
   const handleEdit = (mine) => {
     setEditingId(mine.id)
@@ -622,14 +624,14 @@ function MinesDatabase() {
   }
 
   const handleSave = async () => {
-    await dataService.saveMine(editData)
+    await dataService.saveMine(editData, currentUser.companyId)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this mine? This action cannot be undone.')) {
       try {
-        await dataService.deleteMine(id)
+        await dataService.deleteMine(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete mine: ' + err.message)
       }
@@ -731,15 +733,15 @@ function MinesDatabase() {
   )
 }
 
-function TrucksDatabase() {
+function TrucksDatabase({ currentUser }) {
   const [trucks, setTrucks] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
   useEffect(() => {
-    const unsub = dataService.subscribeToTrucks((data) => setTrucks(data))
+    const unsub = dataService.subscribeToTrucks((data) => setTrucks(data), currentUser.companyId)
     return () => unsub()
-  }, [])
+  }, [currentUser])
 
   const handleEdit = (truck) => {
     setEditingId(truck.id)
@@ -747,14 +749,14 @@ function TrucksDatabase() {
   }
 
   const handleSave = async () => {
-    await dataService.saveTruck(editData)
+    await dataService.saveTruck(editData, currentUser.companyId)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this truck? This action cannot be undone.')) {
       try {
-        await dataService.deleteTruck(id)
+        await dataService.deleteTruck(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete truck: ' + err.message)
       }
@@ -883,15 +885,16 @@ function TrucksDatabase() {
   )
 }
 
-function UsersDatabase() {
+function UsersDatabase({ currentUser }) {
   const [users, setUsers] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
   useEffect(() => {
-    const unsub = dataService.subscribeToUsers((data) => setUsers(data))
+    // Note: users are still in a global node but filtered by companyId in the rules/service
+    const unsub = dataService.subscribeToUsers((data) => setUsers(data), currentUser.companyId)
     return () => unsub()
-  }, [])
+  }, [currentUser])
 
   const handleEdit = (user) => {
     setEditingId(user.id)
@@ -899,14 +902,14 @@ function UsersDatabase() {
   }
 
   const handleSave = async () => {
-    await dataService.saveUser(editData)
+    await dataService.saveUser(editData, currentUser.companyId)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user? Access to the console will be revoked immediately.')) {
       try {
-        await dataService.deleteUser(id)
+        await dataService.deleteUser(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete user: ' + err.message)
       }
@@ -1037,20 +1040,20 @@ function UsersDatabase() {
   )
 }
 
-function ProjectsDatabase() {
+function ProjectsDatabase({ currentUser }) {
   const [projects, setProjects] = useState([])
   const [mines, setMines] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
   useEffect(() => {
-    const unsubProjects = dataService.subscribeToProjects(setProjects)
-    const unsubMines = dataService.subscribeToMines(setMines)
+    const unsubProjects = dataService.subscribeToProjects(setProjects, currentUser.companyId)
+    const unsubMines = dataService.subscribeToMines(setMines, currentUser.companyId)
     return () => {
       unsubProjects()
       unsubMines()
     }
-  }, [])
+  }, [currentUser])
 
   const handleEdit = (project) => {
     setEditingId(project.id)
@@ -1058,14 +1061,14 @@ function ProjectsDatabase() {
   }
 
   const handleSave = async () => {
-    await dataService.saveProject(editData)
+    await dataService.saveProject(editData, currentUser.companyId)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
-        await dataService.deleteProject(id)
+        await dataService.deleteProject(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete project: ' + err.message)
       }

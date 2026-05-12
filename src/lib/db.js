@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { database } from './firebase';
 import { ref, set, get, update, remove } from 'firebase/database';
 

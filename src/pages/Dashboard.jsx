@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dataService } from '../lib/dataService'
@@ -58,11 +59,11 @@ function Dashboard({ currentUser }) {
       setLoading(true)
       try {
         let [history, captures, sitesData, briefingsData] = await Promise.all([
-          dataService.getProduction(),
-          dataService.getCaptures(),
-          dataService.getSites(),
+          dataService.getProduction(currentUser.companyId),
+          dataService.getCaptures(currentUser.companyId),
+          dataService.getSites(currentUser.companyId),
           new Promise((resolve) => {
-            dataService.subscribeToBriefings(resolve)() // Quick fetch for initial load
+            dataService.subscribeToBriefings(resolve, currentUser.companyId)() // Quick fetch for initial load
           })
         ])
 
@@ -72,20 +73,16 @@ function Dashboard({ currentUser }) {
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
           setAvailableSites(sitesData)
         } else if (currentUser.role === 'siteManager') {
-          const userAssigned = Array.isArray(currentUser.assignedSites)
-            ? currentUser.assignedSites.map(id => Number(id))
-            : [Number(currentUser.assignedSite)]
-          setAvailableSites(sitesData.filter(s => userAssigned.includes(Number(s.id))))
+          const assignedIds = Object.keys(currentUser.assignedSites || {})
+          setAvailableSites(sitesData.filter(s => assignedIds.includes(String(s.id))))
         }
 
         // 2. Initial role-based isolation (Site Managers NEVER see other sites)
         if (currentUser.role === 'siteManager') {
-          const userAssigned = Array.isArray(currentUser.assignedSites)
-            ? currentUser.assignedSites.map(id => Number(id))
-            : [Number(currentUser.assignedSite)]
+          const assignedIds = Object.keys(currentUser.assignedSites || {})
 
-          history = history.filter(h => userAssigned.includes(Number(h.siteId)))
-          captures = captures.filter(c => userAssigned.includes(Number(c.siteId)))
+          history = history.filter(h => assignedIds.includes(String(h.siteId)))
+          captures = captures.filter(c => assignedIds.includes(String(c.siteId)))
         }
 
         // 3. User-selected filter (For admins/managers or multi-site managers)
@@ -165,9 +162,9 @@ function Dashboard({ currentUser }) {
 
     fetchData()
 
-    const unsubCaptures = dataService.subscribeToCaptures(() => fetchData())
-    const unsubProd = dataService.subscribeToProduction(() => fetchData())
-    const unsubBriefings = dataService.subscribeToBriefings(setBriefings)
+    const unsubCaptures = dataService.subscribeToCaptures(() => fetchData(), currentUser.companyId)
+    const unsubProd = dataService.subscribeToProduction(() => fetchData(), currentUser.companyId)
+    const unsubBriefings = dataService.subscribeToBriefings(setBriefings, currentUser.companyId)
 
     return () => {
       unsubCaptures()

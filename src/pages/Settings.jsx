@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { APP_MODE } from '../config'

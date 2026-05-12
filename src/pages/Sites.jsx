@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { MapPin, Plus, Edit2, Trash2, Shield, Target, TrendingUp } from 'lucide-react'
@@ -5,39 +6,51 @@ import { MapPin, Plus, Edit2, Trash2, Shield, Target, TrendingUp } from 'lucide-
 function Sites({ currentUser }) {
   const [sites, setSites] = useState([])
   const [editingId, setEditingId] = useState(null)
+  const [mines, setMines] = useState([])
   const [formData, setFormData] = useState({
     siteName: '',
+    mineId: '',
     resource: 'Coal',
     dailyTarget: ''
   })
 
   useEffect(() => {
-    if (!currentUser) return
-    const unsubscribe = dataService.subscribeToSites((storedSites) => {
+    const unsubSites = dataService.subscribeToSites((storedSites) => {
       let filtered = storedSites
       if (currentUser.role === 'siteManager') {
-        filtered = filtered.filter(site => Number(site.id) === Number(currentUser.assignedSite))
+        const assignedIds = Object.keys(currentUser.assignedSites || {})
+        filtered = filtered.filter(site => assignedIds.includes(String(site.id)))
       }
       setSites(filtered)
-    })
-    return () => unsubscribe()
+    }, currentUser.companyId)
+
+    const unsubMines = dataService.subscribeToMines((data) => {
+      setMines(data)
+      if (data.length > 0 && !formData.mineId) {
+        setFormData(prev => ({ ...prev, mineId: data[0].id }))
+      }
+    }, currentUser.companyId)
+
+    return () => {
+      unsubSites()
+      unsubMines()
+    }
   }, [currentUser])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (currentUser.role !== 'admin') return
 
+    const selectedMine = mines.find(m => String(m.id) === String(formData.mineId))
     const siteData = {
       ...formData,
       id: editingId || Date.now(),
-      mineId: 1, 
-      companyId: 1,
-      assignedManager: 'Manager',
-      managerId: 1,
+      mineName: selectedMine?.name || 'Unknown',
+      companyId: currentUser.companyId,
       status: 'Active'
     }
 
-    await dataService.saveSite(siteData)
+    await dataService.saveSite(siteData, currentUser.companyId)
     setEditingId(null)
     setFormData({ siteName: '', resource: 'Coal', dailyTarget: '' })
   }
@@ -47,6 +60,7 @@ function Sites({ currentUser }) {
     setEditingId(site.id)
     setFormData({
       siteName: site.siteName,
+      mineId: site.mineId || '',
       resource: site.resource,
       dailyTarget: site.dailyTarget
     })
@@ -57,7 +71,7 @@ function Sites({ currentUser }) {
     if (currentUser.role !== 'admin') return
     if (window.confirm('Are you sure you want to delete this site?')) {
       try {
-        await dataService.deleteSite(id)
+        await dataService.deleteSite(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete site: ' + err.message)
       }
@@ -104,6 +118,21 @@ function Sites({ currentUser }) {
           </h3>
           
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-500 px-1">Parent Mine</label>
+              <select
+                value={formData.mineId}
+                onChange={(e) => setFormData({ ...formData, mineId: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-600 dark:text-white transition-all font-bold appearance-none"
+                required
+              >
+                <option value="">Select Mine...</option>
+                {mines.map(mine => (
+                  <option key={mine.id} value={mine.id}>{mine.name}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase text-slate-500 px-1">Site Designation</label>
               <input

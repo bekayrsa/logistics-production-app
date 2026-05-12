@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { 
@@ -63,10 +64,13 @@ function Layout({ currentUser, onLogout, children }) {
     saveData('currentUser', null)
     if (onLogout) onLogout()
   }
-
   const getNavigationGroups = () => {
     const role = currentUser?.role
     const groups = []
+    const isSuperAdmin = currentUser?.email === 'boiketloramaobi@gmail.com' || currentUser?.email === 'boiketloramoabi@gmail.com';
+    const isCompanyAdmin = role === 'admin';
+    const isCompanyManager = role === 'manager';
+    const isSiteManager = role === 'siteManager';
 
     // Operations Group
     const operations = {
@@ -74,13 +78,13 @@ function Layout({ currentUser, onLogout, children }) {
       items: [
         { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
         { path: '/capture', label: 'Live Capture', icon: ClipboardList, roles: ['admin', 'siteManager'] },
-      ].filter(i => !i.roles || i.roles.includes(role))
+      ].filter(i => isSuperAdmin || !i.roles || i.roles.includes(role))
     }
     groups.push(operations)
 
     // Intelligence Group
-    const relevantOpenCount = currentUser?.role === 'siteManager'
-      ? briefings.filter(b => b.status === 'open' && Number(b.siteId) === Number(currentUser.assignedSite)).length
+    const relevantOpenCount = isSiteManager
+      ? briefings.filter(b => b.status === 'open' && (Array.isArray(currentUser.assignedSites) ? currentUser.assignedSites.includes(b.siteId) : Number(b.siteId) === Number(currentUser.assignedSite))).length
       : briefings.filter(b => b.status === 'open').length
 
     const intelligence = {
@@ -93,7 +97,7 @@ function Layout({ currentUser, onLogout, children }) {
     groups.push(intelligence)
 
     // Infrastructure Group (Admin Only)
-    if (role === 'admin') {
+    if (isSuperAdmin || isCompanyAdmin) {
       const infrastructure = {
         title: 'Infrastructure',
         items: [
@@ -101,8 +105,8 @@ function Layout({ currentUser, onLogout, children }) {
           { path: '/trucks', label: 'Fleet', icon: Truck },
           { path: '/projects', label: 'Projects', icon: Layers },
           { path: '/users', label: 'Personnel', icon: Users },
-          { path: '/admin-data', label: 'Master Data', icon: Database },
-        ]
+          { path: '/admin-data', label: 'Master Data', icon: Database, roles: ['superAdmin'] },
+        ].filter(i => isSuperAdmin || !i.roles || (i.roles.includes('superAdmin') && isSuperAdmin))
       }
       groups.push(infrastructure)
     }

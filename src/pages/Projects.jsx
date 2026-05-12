@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { Briefcase, Plus, Edit2, Trash2, Shield, Layers, Calendar, Target } from 'lucide-react'
@@ -16,8 +17,8 @@ function Projects({ currentUser }) {
   useEffect(() => {
     if (!currentUser) return
     if (currentUser.role === 'siteManager') return
-    const unsubProjects = dataService.subscribeToProjects(setProjects)
-    const unsubMines = dataService.subscribeToMines(setMines)
+    const unsubProjects = dataService.subscribeToProjects(setProjects, currentUser.companyId)
+    const unsubMines = dataService.subscribeToMines(setMines, currentUser.companyId)
     return () => {
       unsubProjects()
       unsubMines()
@@ -33,7 +34,7 @@ function Projects({ currentUser }) {
       id: editingId || Date.now()
     }
 
-    await dataService.saveProject(projectData)
+    await dataService.saveProject(projectData, currentUser.companyId)
     setEditingId(null)
     setFormData({ projectName: '', mineId: '', mineName: '', status: 'Active' })
   }
@@ -54,7 +55,7 @@ function Projects({ currentUser }) {
     if (currentUser.role !== 'admin') return
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
-        await dataService.deleteProject(id)
+        await dataService.deleteProject(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete project: ' + err.message)
       }

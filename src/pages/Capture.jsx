@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { 
@@ -65,16 +66,21 @@ function Capture({ currentUser }) {
     const unsubSites = dataService.subscribeToSites((sitesData) => {
       let allSites = sitesData
       if (currentUser.role === 'siteManager') {
-        allSites = allSites.filter(site => Number(site.id) === Number(currentUser.assignedSite))
-        setFormData(prev => ({ ...prev, siteId: String(currentUser.assignedSite) }))
+        const assignedIds = Object.keys(currentUser.assignedSites || {})
+        
+        allSites = allSites.filter(site => assignedIds.includes(String(site.id)))
+        
+        if (!formData.siteId || !assignedIds.includes(formData.siteId)) {
+          setFormData(prev => ({ ...prev, siteId: assignedIds[0] || '' }))
+        }
       }
       setSites(allSites)
-    })
+    }, currentUser.companyId)
 
     const unsubTrucks = dataService.subscribeToTrucks((trucksData) => {
       setTrucks(trucksData)
       setFilteredTrucks(trucksData)
-    })
+    }, currentUser.companyId)
 
     return () => {
       unsubSites()
@@ -88,16 +94,18 @@ function Capture({ currentUser }) {
       const today = new Date().toISOString().split('T')[0]
       let filtered = capturesData.filter(c => c.date === today)
       if (currentUser?.role === 'siteManager') {
-        filtered = filtered.filter(c => Number(c.siteId) === Number(currentUser.assignedSite))
+        const assignedIds = Object.keys(currentUser.assignedSites || {})
+        filtered = filtered.filter(c => assignedIds.includes(String(c.siteId)))
       }
       setTodayCaptures(filtered)
-    })
+    }, currentUser.companyId)
     const unsubSubmitted = dataService.subscribeToSubmittedDays((submittedData) => {
       const today = new Date().toISOString().split('T')[0]
       if (currentUser?.role === 'siteManager') {
-        setDaySubmitted(submittedData.some(d => d.date === today && Number(d.siteId) === Number(currentUser.assignedSite)))
+        const assignedIds = Object.keys(currentUser.assignedSites || {})
+        setDaySubmitted(submittedData.some(d => d.date === today && assignedIds.includes(String(d.siteId))))
       }
-    })
+    }, currentUser.companyId)
     return () => {
       unsubCaptures()
       unsubSubmitted()
@@ -142,7 +150,7 @@ function Capture({ currentUser }) {
   }
 
   const submitDayReport = () => {
-    const site = sites.find(s => Number(s.id) === Number(currentUser.assignedSite))
+    const site = sites.find(s => String(s.id) === String(formData.siteId))
     if (!site || pendingEntries.length === 0) return
     const totalTons = pendingEntries.reduce((sum, item) => sum + item.tons, 0)
     const failed = totalTons < Number(site.dailyTarget)
@@ -153,21 +161,21 @@ function Capture({ currentUser }) {
 
   const finalizeSubmission = async () => {
     const today = new Date().toISOString().split('T')[0]
-    const site = sites.find(s => Number(s.id) === Number(currentUser.assignedSite))
+    const site = sites.find(s => String(s.id) === String(formData.siteId))
     if (!site) return
     const target = Number(site.dailyTarget)
     const totalTons = pendingEntries.reduce((sum, item) => sum + item.tons, 0)
     const totalLoads = pendingEntries.reduce((sum, item) => sum + item.loads, 0)
     for (const entry of pendingEntries) {
-      await dataService.createCapture({ ...entry, date: today, failureReport: willFail ? failureReport : null })
+      await dataService.createCapture({ ...entry, date: today, failureReport: willFail ? failureReport : null }, currentUser.companyId)
     }
     await dataService.saveProduction({
       date: today, siteId: site.id, siteName: site.siteName, trucksUsed: pendingEntries.length,
       loadsPerTruck: totalLoads, totalTons, target, actual: totalTons,
       variance: Math.round(((totalTons - target) / target) * 100),
       status: totalTons >= target ? 'On Target' : 'Below Target'
-    })
-    await dataService.saveSubmittedDay({ date: today, siteId: site.id })
+    }, currentUser.companyId)
+    await dataService.saveSubmittedDay({ date: today, siteId: site.id }, currentUser.companyId)
     setPendingEntries([])
     setFailureReport({ reasonCategory: '', explanation: '', delayFactors: [] })
     setShowFailureModal(false)
@@ -177,7 +185,7 @@ function Capture({ currentUser }) {
   if (!canCapture) return <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl">Access Denied</div>
 
   const isSiteManager = currentUser?.role === 'siteManager'
-  const currentTargetSite = sites.find(s => Number(s.id) === Number(isSiteManager ? currentUser.assignedSite : formData.siteId))
+  const currentTargetSite = sites.find(s => String(s.id) === String(formData.siteId))
   const dailyTarget = currentTargetSite ? Number(currentTargetSite.dailyTarget || 0) : 0
   const capturedTonsToday = todayCaptures.filter(c => Number(c.siteId) === Number(currentTargetSite?.id)).reduce((sum, c) => sum + c.tons, 0)
   const pendingTons = pendingEntries.reduce((sum, e) => sum + e.tons, 0)
@@ -235,9 +243,11 @@ function Capture({ currentUser }) {
         </h3>
         
         <form onSubmit={addEntry} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {!isSiteManager && (
+          {(isSiteManager && sites.length > 1 || !isSiteManager) && (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-slate-500 px-1">Location Site</label>
+              <label className="text-[10px] font-black uppercase text-slate-500 px-1">
+                {isSiteManager ? 'Current Active Site' : 'Location Site'}
+              </label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <select
@@ -245,7 +255,7 @@ function Capture({ currentUser }) {
                   onChange={e => setFormData(prev => ({ ...prev, siteId: e.target.value }))}
                   className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-600 dark:text-white transition-all appearance-none font-bold"
                 >
-                  <option value="">Select Site</option>
+                  {!isSiteManager && <option value="">Select Site</option>}
                   {sites.map(site => <option key={site.id} value={site.id}>{site.siteName}</option>)}
                 </select>
               </div>

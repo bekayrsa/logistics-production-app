@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { Map, Plus, Edit2, Trash2, Shield, Drill, Locate, Factory } from 'lucide-react'
@@ -14,8 +15,8 @@ function Mines({ currentUser }) {
 
   useEffect(() => {
     if (!currentUser) return
-    const unsubMines = dataService.subscribeToMines((data) => setMines(data))
-    const unsubSites = dataService.subscribeToSites((data) => setSites(data))
+    const unsubMines = dataService.subscribeToMines((data) => setMines(data), currentUser.companyId)
+    const unsubSites = dataService.subscribeToSites((data) => setSites(data), currentUser.companyId)
     return () => {
       unsubMines()
       unsubSites()
@@ -31,7 +32,7 @@ function Mines({ currentUser }) {
       id: editingId || Date.now()
     }
 
-    await dataService.saveMine(mineData)
+    await dataService.saveMine(mineData, currentUser.companyId)
     setEditingId(null)
     setFormData({ name: '', operation: 'Open Pit', location: '' })
   }
@@ -51,7 +52,7 @@ function Mines({ currentUser }) {
     if (currentUser.role !== 'admin') return
     if (window.confirm('Are you sure you want to delete this mine?')) {
       try {
-        await dataService.deleteMine(id)
+        await dataService.deleteMine(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete mine: ' + err.message)
       }

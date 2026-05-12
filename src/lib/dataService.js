@@ -1,4 +1,4 @@
-import { APP_MODE } from '../config'
+// (RS) Logistics Production App
 import * as localDb from '../utils/localStorage'
 import * as firebaseDb from './db'
 import { database } from './firebase'
@@ -13,6 +13,12 @@ const ensureDatabase = () => {
 };
 
 export const dataService = {
+  // Helper to build tenant-specific paths
+  getPath: (node, companyId) => {
+    if (!companyId || node === 'users' || node === 'companyInfo') return node;
+    return `companies/${companyId}/${node}`;
+  },
+
   // Company Info
   getCompanyInfo: async () => {
     if (isDemo) {
@@ -32,16 +38,16 @@ export const dataService = {
   },
 
   // Sites
-  getSites: async () => {
+  getSites: async (companyId) => {
     if (isDemo) {
       return localDb.getData('sites') || []
     } else {
-      const data = await firebaseDb.readData('sites')
+      const data = await firebaseDb.readData(dataService.getPath('sites', companyId))
       return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
-  saveSite: async (siteData) => {
+  saveSite: async (siteData, companyId) => {
     if (isDemo) {
       const sites = localDb.getData('sites') || []
       const index = sites.findIndex(s => s.id === siteData.id)
@@ -53,21 +59,21 @@ export const dataService = {
       }
     } else {
       const id = siteData.id || Date.now().toString()
-      await firebaseDb.writeData(`sites/${id}`, siteData)
+      await firebaseDb.writeData(dataService.getPath(`sites/${id}`, companyId), siteData)
     }
   },
 
   // Trucks
-  getTrucks: async () => {
+  getTrucks: async (companyId) => {
     if (isDemo) {
       return localDb.getData('trucks') || []
     } else {
-      const data = await firebaseDb.readData('trucks')
+      const data = await firebaseDb.readData(dataService.getPath('trucks', companyId))
       return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
-  saveTruck: async (truckData) => {
+  saveTruck: async (truckData, companyId) => {
     if (isDemo) {
       const trucks = localDb.getData('trucks') || []
       const index = trucks.findIndex(t => t.id === truckData.id)
@@ -79,21 +85,21 @@ export const dataService = {
       }
     } else {
       const id = truckData.id || Date.now().toString()
-      await firebaseDb.writeData(`trucks/${id}`, truckData)
+      await firebaseDb.writeData(dataService.getPath(`trucks/${id}`, companyId), truckData)
     }
   },
 
   // Captures
-  getCaptures: async () => {
+  getCaptures: async (companyId) => {
     if (isDemo) {
       return localDb.getData('captures') || []
     } else {
-      const data = await firebaseDb.readData('captures')
+      const data = await firebaseDb.readData(dataService.getPath('captures', companyId))
       return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
-  createCapture: async (captureData) => {
+  createCapture: async (captureData, companyId) => {
     if (isDemo) {
       const captures = localDb.getData('captures') || []
       if (captureData.id) {
@@ -109,7 +115,7 @@ export const dataService = {
       return newCapture
     } else {
       ensureDatabase();
-      const id = captureData.id || push(ref(database, 'captures')).key
+      const id = captureData.id || push(ref(database, dataService.getPath('captures', companyId))).key
       const extendedData = {
         ...captureData,
         id,
@@ -119,22 +125,22 @@ export const dataService = {
         captureTime: new Date().toISOString(),
         captureLoad: captureData.tons
       }
-      await set(ref(database, `captures/${id}`), extendedData)
+      await set(ref(database, dataService.getPath(`captures/${id}`, companyId)), extendedData)
       return extendedData
     }
   },
 
   // Production
-  getProduction: async () => {
+  getProduction: async (companyId) => {
     if (isDemo) {
       return localDb.getData('production') || []
     } else {
-      const data = await firebaseDb.readData('production')
+      const data = await firebaseDb.readData(dataService.getPath('production', companyId))
       return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
-  saveProduction: async (prodData) => {
+  saveProduction: async (prodData, companyId) => {
     if (isDemo) {
       const production = localDb.getData('production') || []
       const index = production.findIndex(p => p.id === prodData.id)
@@ -146,8 +152,8 @@ export const dataService = {
       }
     } else {
       ensureDatabase();
-      const id = prodData.id || push(ref(database, 'production')).key
-      await set(ref(database, `production/${id}`), { ...prodData, id })
+      const id = prodData.id || push(ref(database, dataService.getPath('production', companyId))).key
+      await set(ref(database, dataService.getPath(`production/${id}`, companyId)), { ...prodData, id })
     }
   },
 
@@ -161,20 +167,20 @@ export const dataService = {
     }
   },
 
-  saveSubmittedDay: async (dayData) => {
+  saveSubmittedDay: async (dayData, companyId) => {
     if (isDemo) {
       const submitted = localDb.getData('submittedDays') || []
       localDb.saveData('submittedDays', [...submitted, dayData])
     } else {
       ensureDatabase();
-      const subRef = ref(database, 'submittedDays')
+      const subRef = ref(database, dataService.getPath('submittedDays', companyId))
       const newRef = push(subRef)
       await set(newRef, { ...dayData, id: newRef.key })
     }
   },
 
   // Subscriptions
-  subscribeToCaptures: (callback) => {
+  subscribeToCaptures: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('captures') || []
       callback(data)
@@ -184,7 +190,7 @@ export const dataService = {
         console.warn("Database not initialized, subscription skipped.");
         return () => {};
       }
-      const capturesRef = ref(database, 'captures')
+      const capturesRef = ref(database, dataService.getPath('captures', companyId))
       const unsubscribe = onValue(capturesRef, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -193,14 +199,14 @@ export const dataService = {
     }
   },
 
-  subscribeToProduction: (callback) => {
+  subscribeToProduction: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('production') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const prodRef = ref(database, 'production')
+      const prodRef = ref(database, dataService.getPath('production', companyId))
       const unsubscribe = onValue(prodRef, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -209,14 +215,14 @@ export const dataService = {
     }
   },
 
-  subscribeToSubmittedDays: (callback) => {
+  subscribeToSubmittedDays: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('submittedDays') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const subRef = ref(database, 'submittedDays')
+      const subRef = ref(database, dataService.getPath('submittedDays', companyId))
       const unsubscribe = onValue(subRef, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -225,14 +231,14 @@ export const dataService = {
     }
   },
 
-  subscribeToSites: (callback) => {
+  subscribeToSites: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('sites') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const refNode = ref(database, 'sites')
+      const refNode = ref(database, dataService.getPath('sites', companyId))
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -241,14 +247,14 @@ export const dataService = {
     }
   },
 
-  subscribeToTrucks: (callback) => {
+  subscribeToTrucks: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('trucks') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const refNode = ref(database, 'trucks')
+      const refNode = ref(database, dataService.getPath('trucks', companyId))
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -273,14 +279,14 @@ export const dataService = {
     }
   },
 
-  subscribeToProjects: (callback) => {
+  subscribeToProjects: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('projects') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const refNode = ref(database, 'projects')
+      const refNode = ref(database, dataService.getPath('projects', companyId))
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -289,14 +295,14 @@ export const dataService = {
     }
   },
 
-  subscribeToMines: (callback) => {
+  subscribeToMines: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('mines') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const refNode = ref(database, 'mines')
+      const refNode = ref(database, dataService.getPath('mines', companyId))
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -305,14 +311,14 @@ export const dataService = {
     }
   },
 
-  subscribeToComments: (callback) => {
+  subscribeToComments: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('comments') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const refNode = ref(database, 'comments')
+      const refNode = ref(database, dataService.getPath('comments', companyId))
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -348,16 +354,16 @@ export const dataService = {
   },
 
   // Projects
-  getProjects: async () => {
+  getProjects: async (companyId) => {
     if (isDemo) {
       return localDb.getData('projects') || []
     } else {
-      const data = await firebaseDb.readData('projects')
+      const data = await firebaseDb.readData(dataService.getPath('projects', companyId))
       return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
-  saveProject: async (projectData) => {
+  saveProject: async (projectData, companyId) => {
     if (isDemo) {
       const projects = localDb.getData('projects') || []
       const index = projects.findIndex(p => p.id === projectData.id)
@@ -369,21 +375,21 @@ export const dataService = {
       }
     } else {
       const id = projectData.id || Date.now().toString()
-      await firebaseDb.writeData(`projects/${id}`, projectData)
+      await firebaseDb.writeData(dataService.getPath(`projects/${id}`, companyId), projectData)
     }
   },
 
   // Mines
-  getMines: async () => {
+  getMines: async (companyId) => {
     if (isDemo) {
       return localDb.getData('mines') || []
     } else {
-      const data = await firebaseDb.readData('mines')
+      const data = await firebaseDb.readData(dataService.getPath('mines', companyId))
       return data ? Object.values(data).filter(Boolean) : []
     }
   },
 
-  saveMine: async (mineData) => {
+  saveMine: async (mineData, companyId) => {
     if (isDemo) {
       const mines = localDb.getData('mines') || []
       const index = mines.findIndex(m => m.id === mineData.id)
@@ -395,7 +401,7 @@ export const dataService = {
       }
     } else {
       const id = mineData.id || Date.now().toString()
-      await firebaseDb.writeData(`mines/${id}`, mineData)
+      await firebaseDb.writeData(dataService.getPath(`mines/${id}`, companyId), mineData)
     }
   },
 
@@ -453,21 +459,21 @@ export const dataService = {
   },
 
   // Delete Operations
-  deleteSite: async (id) => {
+  deleteSite: async (id, companyId) => {
     if (isDemo) {
       const sites = localDb.getData('sites') || []
       localDb.saveData('sites', sites.filter(s => s.id !== id))
     } else {
-      await firebaseDb.deleteData(`sites/${id}`)
+      await firebaseDb.deleteData(dataService.getPath(`sites/${id}`, companyId))
     }
   },
 
-  deleteTruck: async (id) => {
+  deleteTruck: async (id, companyId) => {
     if (isDemo) {
       const trucks = localDb.getData('trucks') || []
       localDb.saveData('trucks', trucks.filter(t => t.id !== id))
     } else {
-      await firebaseDb.deleteData(`trucks/${id}`)
+      await firebaseDb.deleteData(dataService.getPath(`trucks/${id}`, companyId))
     }
   },
 
@@ -480,42 +486,42 @@ export const dataService = {
     }
   },
 
-  deleteProject: async (id) => {
+  deleteProject: async (id, companyId) => {
     if (isDemo) {
       const projects = localDb.getData('projects') || []
       localDb.saveData('projects', projects.filter(p => p.id !== id))
     } else {
-      await firebaseDb.deleteData(`projects/${id}`)
+      await firebaseDb.deleteData(dataService.getPath(`projects/${id}`, companyId))
     }
   },
 
-  deleteMine: async (id) => {
+  deleteMine: async (id, companyId) => {
     if (isDemo) {
       const mines = localDb.getData('mines') || []
       localDb.saveData('mines', mines.filter(m => m.id !== id))
     } else {
-      await firebaseDb.deleteData(`mines/${id}`)
+      await firebaseDb.deleteData(dataService.getPath(`mines/${id}`, companyId))
     }
   },
 
-  deleteCapture: async (id) => {
+  deleteCapture: async (id, companyId) => {
     if (isDemo) {
       const captures = localDb.getData('captures') || []
       localDb.saveData('captures', captures.filter(c => c.id !== id))
     } else {
-      await firebaseDb.deleteData(`captures/${id}`)
+      await firebaseDb.deleteData(dataService.getPath(`captures/${id}`, companyId))
     }
   },
 
   // Briefings (Performance Briefings)
-  subscribeToBriefings: (callback) => {
+  subscribeToBriefings: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('briefings') || []
       callback(data)
       return () => {}
     } else {
       if (!database) return () => {};
-      const refNode = ref(database, 'briefings')
+      const refNode = ref(database, dataService.getPath('briefings', companyId))
       const unsubscribe = onValue(refNode, (snapshot) => {
         const data = snapshot.val() || {}
         callback(Object.values(data).filter(Boolean))
@@ -524,7 +530,7 @@ export const dataService = {
     }
   },
 
-  saveBriefing: async (briefingData) => {
+  saveBriefing: async (briefingData, companyId) => {
     const id = briefingData.id || Date.now().toString()
     const finalData = {
       ...briefingData,
@@ -543,11 +549,11 @@ export const dataService = {
         localDb.saveData('briefings', [...briefings, finalData])
       }
     } else {
-      await firebaseDb.writeData(`briefings/${id}`, finalData)
+      await firebaseDb.writeData(dataService.getPath(`briefings/${id}`, companyId), finalData)
     }
   },
 
-  addReplyToBriefing: async (briefingId, reply) => {
+  addReplyToBriefing: async (briefingId, reply, companyId) => {
     if (isDemo) {
       const briefings = localDb.getData('briefings') || []
       const index = briefings.findIndex(b => b.id === briefingId)
@@ -557,18 +563,16 @@ export const dataService = {
         localDb.saveData('briefings', briefings)
       }
     } else {
-      // In Realtime Database, we fetch then update for nested arrays usually, or use a separate node
-      // To keep it simple and consistent with other methods here:
-      const briefings = await firebaseDb.readData('briefings')
+      const briefings = await firebaseDb.readData(dataService.getPath('briefings', companyId))
       if (briefings && briefings[briefingId]) {
         const briefing = briefings[briefingId]
         const updatedReplies = [...(briefing.replies || []), { ...reply, timestamp: Date.now() }]
-        await firebaseDb.writeData(`briefings/${briefingId}/replies`, updatedReplies)
+        await firebaseDb.writeData(dataService.getPath(`briefings/${briefingId}/replies`, companyId), updatedReplies)
       }
     }
   },
 
-  resolveBriefing: async (briefingId) => {
+  resolveBriefing: async (briefingId, companyId) => {
     if (isDemo) {
       const briefings = localDb.getData('briefings') || []
       const index = briefings.findIndex(b => b.id === briefingId)
@@ -577,7 +581,7 @@ export const dataService = {
         localDb.saveData('briefings', briefings)
       }
     } else {
-      await firebaseDb.writeData(`briefings/${briefingId}/status`, 'resolved')
+      await firebaseDb.writeData(dataService.getPath(`briefings/${briefingId}/status`, companyId), 'resolved')
     }
-  }
+  },
 }

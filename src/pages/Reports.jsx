@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
@@ -35,24 +36,21 @@ function Reports({ currentUser }) {
     const unsubCaptures = dataService.subscribeToCaptures((data) => {
       setAllCaptures(data)
       setLoading(false)
-    })
+    }, currentUser.companyId)
 
     // 2. Subscribe to Sites to populate filters
     const unsubSites = dataService.subscribeToSites((sitesData) => {
       if (currentUser.role === 'admin' || currentUser.role === 'manager') {
         setAvailableSites(sitesData)
       } else if (currentUser.role === 'siteManager') {
-        const userAssigned = Array.isArray(currentUser.assignedSites) 
-          ? currentUser.assignedSites.map(id => Number(id))
-          : [Number(currentUser.assignedSite)]
-        
-        setAvailableSites(sitesData.filter(s => userAssigned.includes(Number(s.id))))
+        const assignedIds = Object.keys(currentUser.assignedSites || {})
+        setAvailableSites(sitesData.filter(s => assignedIds.includes(String(s.id))))
       }
-    })
+    }, currentUser.companyId)
 
     const unsubBriefings = dataService.subscribeToBriefings((data) => {
       setBriefings(data)
-    })
+    }, currentUser.companyId)
 
     return () => {
       unsubCaptures()
@@ -69,11 +67,8 @@ function Reports({ currentUser }) {
 
     // 2. Role-based isolation
     if (currentUser?.role === 'siteManager') {
-      const userAssigned = Array.isArray(currentUser.assignedSites) 
-        ? currentUser.assignedSites.map(id => Number(id))
-        : [Number(currentUser.assignedSite)]
-      
-      result = result.filter(c => userAssigned.includes(Number(c.siteId)))
+      const assignedIds = Object.keys(currentUser.assignedSites || {})
+      result = result.filter(c => assignedIds.includes(String(c.siteId)))
     }
 
     // 3. Specific Site Selection

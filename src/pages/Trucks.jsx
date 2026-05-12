@@ -1,3 +1,4 @@
+// (RS) Logistics Production App
 import { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { Truck, Plus, Edit2, Trash2, Shield, Info, ArrowRight } from 'lucide-react'
@@ -13,7 +14,7 @@ function Trucks({ currentUser }) {
 
   useEffect(() => {
     if (!currentUser) return
-    const unsubscribe = dataService.subscribeToTrucks((data) => setTrucks(data))
+    const unsubscribe = dataService.subscribeToTrucks((data) => setTrucks(data), currentUser.companyId)
     return () => unsubscribe()
   }, [currentUser])
 
@@ -24,11 +25,11 @@ function Trucks({ currentUser }) {
     const truckData = {
       ...formData,
       id: editingId || Date.now(),
-      companyId: 1,
+      companyId: currentUser.companyId,
       status: 'Active'
     }
 
-    await dataService.saveTruck(truckData)
+    await dataService.saveTruck(truckData, currentUser.companyId)
     setEditingId(null)
     setFormData({ truckName: '', type: 'ADT', capacity: '' })
   }
@@ -48,7 +49,7 @@ function Trucks({ currentUser }) {
     if (currentUser.role !== 'admin') return
     if (window.confirm('Are you sure you want to delete this truck?')) {
       try {
-        await dataService.deleteTruck(id)
+        await dataService.deleteTruck(id, currentUser.companyId)
       } catch (err) {
         alert('Failed to delete truck: ' + err.message)
       }
