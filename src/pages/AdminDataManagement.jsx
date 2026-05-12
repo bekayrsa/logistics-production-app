@@ -5,18 +5,6 @@ import { exportToCSV } from '../utils/exportUtils'
 import { Plus, Edit2, Trash2, Database, Shield, Layout, Users, Truck, MapPin, Briefcase, FileText, Search, Filter, Save, X, AlertCircle, BarChart3, Map, Upload, DownloadCloud, Info } from 'lucide-react'
 
 function AdminDataManagement({ currentUser }) {
-  if (currentUser?.role !== 'admin') {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-3xl flex items-center justify-center text-rose-600 mb-6">
-          <Shield size={40} />
-        </div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Access Denied</h2>
-        <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">Only Company Administrators can access the master data management console.</p>
-      </div>
-    )
-  }
-
   const [activeTab, setActiveTab] = useState('captures')
   const [captures, setCaptures] = useState([])
   const [production, setProduction] = useState([])
@@ -28,6 +16,7 @@ function AdminDataManagement({ currentUser }) {
   const [importStatus, setImportStatus] = useState({ loading: false, result: null })
 
   useEffect(() => {
+    if (!currentUser || currentUser.role !== 'admin') return
     setLoading(true)
     const unsubCaptures = dataService.subscribeToCaptures((allCaptures) => {
       const filtered = allCaptures
@@ -47,6 +36,18 @@ function AdminDataManagement({ currentUser }) {
       unsubProduction()
     }
   }, [filterDate, currentUser])
+
+  if (currentUser?.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-3xl flex items-center justify-center text-rose-600 mb-6">
+          <Shield size={40} />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Access Denied</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">Only Company Administrators can access the master data management console.</p>
+      </div>
+    )
+  }
 
   const handleEditCapture = (capture) => {
     setEditingId(capture.id)

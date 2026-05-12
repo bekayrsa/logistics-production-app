@@ -31,6 +31,7 @@ import {
 } from 'recharts'
 
 function Dashboard({ currentUser }) {
+  const navigate = useNavigate()
   const [stats, setStats] = useState({
     totalTons: 0,
     onTargetSites: 0,
@@ -203,8 +204,6 @@ function Dashboard({ currentUser }) {
     )
   }
 
-
-  const navigate = useNavigate()
 
   return (
     <div className="space-y-12">
