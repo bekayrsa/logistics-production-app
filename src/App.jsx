@@ -15,6 +15,7 @@ import Reports from './pages/Reports'
 import Users from './pages/Users'
 import AdminDataManagement from './pages/AdminDataManagement'
 import SuperAdminConsole from './pages/SuperAdminConsole'
+import AuditLog from './pages/AuditLog'
 import Settings from './pages/Settings'
 import { loadDemoData } from './utils/demoData'
 import { getData } from './utils/localStorage'
@@ -58,6 +59,7 @@ function App() {
         <Route path="reports" element={<Reports currentUser={currentUser} />} />
         <Route path="users" element={<Users currentUser={currentUser} />} />
         <Route path="super-admin" element={<SuperAdminConsole currentUser={currentUser} />} />
+        <Route path="audit-log" element={<AuditLog currentUser={currentUser} />} />
         <Route path="settings" element={<Settings currentUser={currentUser} />} />
       </Route>
     </Routes>

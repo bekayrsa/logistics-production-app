@@ -4,7 +4,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { 
   Menu, X, LogOut, Shield, Database, WifiOff, Sun, Moon, 
   LayoutDashboard, ClipboardList, BarChart3, LineChart, 
-  Map, Truck, Users, Settings, Activity, Layers, Package
+  Map, Truck, Users, Settings, Activity, Layers, Package,
+  History, Globe
 } from 'lucide-react'
 import { getData, saveData } from '../utils/localStorage'
 import { APP_MODE } from '../config'
@@ -84,6 +85,7 @@ function Layout({ currentUser, onLogout, children }) {
         title: 'Global Ecosystem',
         items: [
           { path: '/super-admin', label: 'Tenants', icon: Globe },
+          { path: '/audit-log', label: 'Global Audit', icon: History },
           { path: '/admin-data', label: 'Master Registry', icon: Database },
         ]
       })
@@ -130,8 +132,9 @@ function Layout({ currentUser, onLogout, children }) {
     const system = {
       title: 'System',
       items: [
+        { path: '/audit-log', label: 'Audit Trail', icon: History, roles: ['admin'] },
         { path: '/settings', label: 'Settings', icon: Settings },
-      ]
+      ].filter(i => isSuperAdmin || !i.roles || i.roles.includes(role))
     }
     groups.push(system)
 

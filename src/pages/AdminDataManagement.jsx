@@ -904,14 +904,14 @@ function UsersDatabase({ currentUser }) {
   }
 
   const handleSave = async () => {
-    await dataService.saveUser(editData, currentUser.companyId)
+    await dataService.saveUser(editData, currentUser.companyId, currentUser)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user? Access to the console will be revoked immediately.')) {
       try {
-        await dataService.deleteUser(id, currentUser.companyId)
+        await dataService.deleteUser(id, currentUser.companyId, currentUser)
       } catch (err) {
         alert('Failed to delete user: ' + err.message)
       }

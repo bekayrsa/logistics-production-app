@@ -170,6 +170,15 @@ export const dataService = {
     }
   },
 
+  getCapture: async (id, companyId) => {
+    if (isDemo) {
+      const captures = localDb.getData('captures') || []
+      return captures.find(c => c.id === id)
+    } else {
+      return await firebaseDb.readData(dataService.getPath(`captures/${id}`, companyId))
+    }
+  },
+
   createCapture: async (captureData, companyId) => {
     if (isDemo) {
       const captures = localDb.getData('captures') || []

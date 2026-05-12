@@ -1,12 +1,14 @@
 // (RS) Logistics Production App
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { APP_MODE } from '../config';
 import { Shield, Lock, Mail, ArrowRight, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { loadDemoData } from '../utils/demoData';
 
 function Login() {
   const { login, resetPassword } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -26,6 +28,7 @@ function Login() {
         setMessage('Reset instructions sent to your email.')
       } else {
         await login(email, password)
+        navigate('/dashboard')
       }
     } catch (err) {
       console.error(err)

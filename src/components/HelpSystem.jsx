@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { 
   HelpCircle, X, BookOpen, Info, 
   Lightbulb, Shield, Zap, Target,
-  ChevronRight, PlayCircle
+  ChevronRight, PlayCircle, Clock, User
 } from 'lucide-react'
 
 const HELP_CONTENT = {
@@ -94,6 +94,27 @@ const HELP_CONTENT = {
         icon: Shield,
         title: 'Data Siloing',
         content: 'Manage the infrastructure that ensures complete isolation between different logistics companies.'
+      }
+    ]
+  },
+  '/audit-log': {
+    title: 'Security & Audit Center',
+    description: 'The definitive ledger for organizational accountability.',
+    sections: [
+      {
+        icon: Shield,
+        title: 'Forensic Tracking',
+        content: 'Review a complete history of every tonnage adjustment and user modification.'
+      },
+      {
+        icon: Clock,
+        title: 'Timeline Analysis',
+        content: 'Filter records by timestamp or operator to investigate specific operational changes.'
+      },
+      {
+        icon: User,
+        title: 'Operator Verification',
+        content: 'Identify exactly which administrator performed a specific master data update.'
       }
     ]
   },
