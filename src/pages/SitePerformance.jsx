@@ -125,7 +125,7 @@ function SitePerformance({ currentUser }) {
     .filter(c => c.siteId === activeSiteId && c.date === today)
     .sort((a, b) => b.timestamp - a.timestamp)
 
-  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager'
+  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager' || currentUser?.role === 'superAdmin'
 
   if (!canView) {
     return (
@@ -341,7 +341,7 @@ function SitePerformance({ currentUser }) {
           ))}
         </div>
 
-        {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
+        {(currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') && (
           <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
             <form onSubmit={handleAddComment} className="relative">
               <textarea 

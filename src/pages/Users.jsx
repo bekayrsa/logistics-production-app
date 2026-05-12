@@ -19,12 +19,13 @@ function Users({ currentUser }) {
     assignedSites: []
   })
 
-  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager'
-  const canEdit = currentUser?.role === 'admin'
+  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'superAdmin'
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'superAdmin'
 
   useEffect(() => {
     if (!canView) return
-    const unsubUsers = dataService.subscribeToUsers((data) => setUsers(data), currentUser.companyId)
+    const isSuperAdmin = currentUser.role === 'superAdmin'
+    const unsubUsers = dataService.subscribeToUsers((data) => setUsers(data), currentUser.companyId, isSuperAdmin)
     const unsubSites = dataService.subscribeToSites((data) => setSites(data), currentUser.companyId)
     return () => {
       unsubUsers()
@@ -163,6 +164,7 @@ function Users({ currentUser }) {
                 <option value="admin">Company Administrator</option>
                 <option value="manager">Operations Manager</option>
                 <option value="siteManager">Field Site Manager</option>
+                {currentUser?.role === 'superAdmin' && <option value="superAdmin">System SuperAdmin</option>}
               </select>
             </div>
             <div className="lg:col-span-2 space-y-3">

@@ -71,7 +71,7 @@ function Dashboard({ currentUser }) {
         setBriefings(briefingsData || [])
 
         // 1. Populate available sites for the filter dropdown
-        if (currentUser.role === 'admin' || currentUser.role === 'manager') {
+        if (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') {
           setAvailableSites(sitesData)
         } else if (currentUser.role === 'siteManager') {
           const assignedIds = Object.keys(currentUser.assignedSites || {})

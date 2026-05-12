@@ -167,7 +167,7 @@ function Capture({ currentUser }) {
     const totalTons = pendingEntries.reduce((sum, item) => sum + item.tons, 0)
     const totalLoads = pendingEntries.reduce((sum, item) => sum + item.loads, 0)
     for (const entry of pendingEntries) {
-      await dataService.createCapture({ ...entry, date: today, failureReport: willFail ? failureReport : null }, currentUser.companyId)
+      await dataService.createCapture({ ...entry, date: today, failureReport: willFail ? failureReport : null }, currentUser.companyId, currentUser)
     }
     await dataService.saveProduction({
       date: today, siteId: site.id, siteName: site.siteName, trucksUsed: pendingEntries.length,
@@ -181,7 +181,7 @@ function Capture({ currentUser }) {
     setShowFailureModal(false)
   }
 
-  const canCapture = currentUser?.role === 'admin' || currentUser?.role === 'siteManager'
+  const canCapture = currentUser?.role === 'admin' || currentUser?.role === 'siteManager' || currentUser?.role === 'superAdmin'
   if (!canCapture) return <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl">Access Denied</div>
 
   const isSiteManager = currentUser?.role === 'siteManager'

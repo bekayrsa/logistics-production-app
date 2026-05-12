@@ -16,7 +16,7 @@ function AdminDataManagement({ currentUser }) {
   const [importStatus, setImportStatus] = useState({ loading: false, result: null })
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'admin') return
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superAdmin')) return
     setLoading(true)
     const unsubCaptures = dataService.subscribeToCaptures((allCaptures) => {
       const filtered = allCaptures
@@ -37,7 +37,7 @@ function AdminDataManagement({ currentUser }) {
     }
   }, [filterDate, currentUser])
 
-  if (currentUser?.role !== 'admin') {
+  if (currentUser?.role !== 'admin' && currentUser?.role !== 'superAdmin') {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-3xl flex items-center justify-center text-rose-600 mb-6">
@@ -893,7 +893,8 @@ function UsersDatabase({ currentUser }) {
 
   useEffect(() => {
     // Note: users are still in a global node but filtered by companyId in the rules/service
-    const unsub = dataService.subscribeToUsers((data) => setUsers(data), currentUser.companyId)
+    const isSuperAdmin = currentUser.role === 'superAdmin'
+    const unsub = dataService.subscribeToUsers((data) => setUsers(data), currentUser.companyId, isSuperAdmin)
     return () => unsub()
   }, [currentUser])
 

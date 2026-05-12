@@ -37,10 +37,10 @@ export const AuthProvider = ({ children }) => {
             const userData = await readData(`users/${safeId}`);
             
             if (userData) {
-              setCurrentUser({ ...user, ...userData, role: isOwner ? 'admin' : userData.role });
+              setCurrentUser({ ...user, ...userData, role: isOwner ? 'superAdmin' : userData.role });
             } else if (isOwner) {
-              // Superadmin Override: Force admin role for the owner even if DB record is missing
-              setCurrentUser({ ...user, role: 'admin', name: 'System', surname: 'Owner' });
+              // Superadmin Override: Force superAdmin role for the owner even if DB record is missing
+              setCurrentUser({ ...user, role: 'superAdmin', name: 'System', surname: 'Owner', companyId: 'master' });
             } else {
               setCurrentUser(user);
             }
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
             console.error("Error fetching user data:", error);
             // Even if DB fails, allow owner in
             if (user.email === 'boiketloramaobi@gmail.com' || user.email === 'boiketloramoabi@gmail.com') {
-              setCurrentUser({ ...user, role: 'admin', name: 'System', surname: 'Owner' });
+              setCurrentUser({ ...user, role: 'superAdmin', name: 'System', surname: 'Owner', companyId: 'master' });
             } else {
               setCurrentUser(user);
             }

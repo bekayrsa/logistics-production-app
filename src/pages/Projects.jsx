@@ -62,8 +62,8 @@ function Projects({ currentUser }) {
     }
   }
 
-  const canEdit = currentUser?.role === 'admin'
-  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager'
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'superAdmin'
+  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'superAdmin'
 
   if (!canView) {
     return (

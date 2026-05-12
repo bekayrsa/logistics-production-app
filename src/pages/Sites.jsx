@@ -89,8 +89,8 @@ function Sites({ currentUser }) {
     return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
   }
 
-  const canEdit = currentUser?.role === 'admin'
-  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager'
+  const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'superAdmin'
+  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager' || currentUser?.role === 'superAdmin'
 
   if (!canView) {
     return (

@@ -9,6 +9,7 @@ import {
 import { getData, saveData } from '../utils/localStorage'
 import { APP_MODE } from '../config'
 import { dataService } from '../lib/dataService'
+import HelpSystem from './HelpSystem'
 
 function Layout({ currentUser, onLogout, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -16,6 +17,7 @@ function Layout({ currentUser, onLogout, children }) {
   const [darkMode, setDarkMode] = useState(false)
   const [isConnected, setIsConnected] = useState(true)
   const [briefings, setBriefings] = useState([])
+  const [companyInfo, setCompanyInfo] = useState(null)
 
   const location = useLocation()
 
@@ -42,6 +44,10 @@ function Layout({ currentUser, onLogout, children }) {
   useEffect(() => {
     const unsub = dataService.onConnectionChange(setIsConnected)
     const unsubBriefings = dataService.subscribeToBriefings(setBriefings)
+    
+    // (RS) Load tenant branding
+    dataService.getCompanyInfo(currentUser?.companyId).then(setCompanyInfo)
+
     return () => {
       unsub()
       unsubBriefings()
@@ -67,10 +73,21 @@ function Layout({ currentUser, onLogout, children }) {
   const getNavigationGroups = () => {
     const role = currentUser?.role
     const groups = []
-    const isSuperAdmin = currentUser?.email === 'boiketloramaobi@gmail.com' || currentUser?.email === 'boiketloramoabi@gmail.com';
+    const isSuperAdmin = role === 'superAdmin';
     const isCompanyAdmin = role === 'admin';
     const isCompanyManager = role === 'manager';
     const isSiteManager = role === 'siteManager';
+
+    // (RS) Global Ecosystem (SuperAdmin Only)
+    if (isSuperAdmin) {
+      groups.push({
+        title: 'Global Ecosystem',
+        items: [
+          { path: '/super-admin', label: 'Tenants', icon: Globe },
+          { path: '/admin-data', label: 'Master Registry', icon: Database },
+        ]
+      })
+    }
 
     // Operations Group
     const operations = {
@@ -96,7 +113,6 @@ function Layout({ currentUser, onLogout, children }) {
     }
     groups.push(intelligence)
 
-    // Infrastructure Group (Admin Only)
     if (isSuperAdmin || isCompanyAdmin) {
       const infrastructure = {
         title: 'Infrastructure',
@@ -105,8 +121,7 @@ function Layout({ currentUser, onLogout, children }) {
           { path: '/trucks', label: 'Fleet', icon: Truck },
           { path: '/projects', label: 'Projects', icon: Layers },
           { path: '/users', label: 'Personnel', icon: Users },
-          { path: '/admin-data', label: 'Master Data', icon: Database, roles: ['superAdmin'] },
-        ].filter(i => isSuperAdmin || !i.roles || (i.roles.includes('superAdmin') && isSuperAdmin))
+        ]
       }
       groups.push(infrastructure)
     }
@@ -157,7 +172,9 @@ function Layout({ currentUser, onLogout, children }) {
               <Package size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">PRODUCTION</h1>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter leading-none truncate max-w-[160px]">
+                {companyInfo?.companyName || 'PRODUCTION'}
+              </h1>
               <p className="text-[10px] uppercase tracking-[0.3em] text-blue-600 font-black mt-1">Management Pro</p>
             </div>
           </div>
@@ -251,7 +268,7 @@ function Layout({ currentUser, onLogout, children }) {
               </div>
               <span className="font-black text-sm tracking-tighter dark:text-white">PRODUCTION</span>
             </div>
-            <div className="w-10"></div>
+            <HelpSystem currentPath={location.pathname} />
           </header>
         )}
 
@@ -275,11 +292,14 @@ function Layout({ currentUser, onLogout, children }) {
                   {activeItemLabel}
                 </h2>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-2">Current Session</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-300">
-                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
+              <div className="flex items-center gap-6">
+                <HelpSystem currentPath={location.pathname} />
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-2">Current Session</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-300">
+                    {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
               </div>
             </div>
           </header>

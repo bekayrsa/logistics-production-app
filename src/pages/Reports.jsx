@@ -40,7 +40,7 @@ function Reports({ currentUser }) {
 
     // 2. Subscribe to Sites to populate filters
     const unsubSites = dataService.subscribeToSites((sitesData) => {
-      if (currentUser.role === 'admin' || currentUser.role === 'manager') {
+      if (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') {
         setAvailableSites(sitesData)
       } else if (currentUser.role === 'siteManager') {
         const assignedIds = Object.keys(currentUser.assignedSites || {})
@@ -143,7 +143,7 @@ function Reports({ currentUser }) {
     return acc
   }, {})).sort((a, b) => a.date.localeCompare(b.date))
 
-  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager'
+  const canView = currentUser?.role === 'admin' || currentUser?.role === 'manager' || currentUser?.role === 'siteManager' || currentUser?.role === 'superAdmin'
 
   if (!canView) {
     return (
@@ -572,7 +572,7 @@ function BriefingPanel({ isOpen, onClose, currentUser, sites, briefings }) {
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
           {/* New Briefing Form (Admin/Manager only) */}
-          {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
+          {(currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') && (
             <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-3xl border border-blue-100 dark:border-blue-900/20">
               <h4 className="text-xs font-black uppercase tracking-widest text-blue-600 mb-4 flex items-center">
                 <Send size={14} className="mr-2" /> Issue New Briefing
@@ -668,7 +668,7 @@ function BriefingPanel({ isOpen, onClose, currentUser, sites, briefings }) {
                         </button>
                       </div>
                       
-                      {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
+                      {(currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') && (
                         <button 
                           onClick={() => handleResolve(briefing.id)}
                           className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all"
