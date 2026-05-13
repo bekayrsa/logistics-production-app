@@ -1,6 +1,6 @@
 // (RS) Logistics Production App
 import { database } from './firebase';
-import { ref, set, get, update, remove } from 'firebase/database';
+import { ref, set, get, update, remove, push } from 'firebase/database';
 
 const ensureDatabase = () => {
   if (!database) {
@@ -27,4 +27,10 @@ export const updateData = async (path, data) => {
 export const deleteData = async (path) => {
   ensureDatabase();
   return remove(ref(database, path));
+};
+export const pushData = async (path, data) => {
+  ensureDatabase();
+  const newRef = push(ref(database, path));
+  await set(newRef, data);
+  return newRef.key;
 };

@@ -43,7 +43,7 @@ function Dashboard({ currentUser }) {
   const [recentCaptures, setRecentCaptures] = useState([])
   const [briefings, setBriefings] = useState([])
   const [sitePerformance, setSitePerformance] = useState([])
-  const [selectedCompany, setSelectedCompany] = useState(currentUser.companyId)
+  const [selectedCompany, setSelectedCompany] = useState(currentUser?.companyId || 'master')
   const [companies, setCompanies] = useState([])
 
   useEffect(() => {

@@ -105,8 +105,8 @@ function Layout({ currentUser, onLogout, children }) {
 
     // Intelligence Group
     const relevantOpenCount = isSiteManager
-      ? briefings.filter(b => b.status === 'open' && (Array.isArray(currentUser.assignedSites) ? currentUser.assignedSites.includes(b.siteId) : Number(b.siteId) === Number(currentUser.assignedSite))).length
-      : briefings.filter(b => b.status === 'open').length
+      ? (briefings || []).filter(b => b.status === 'open' && (Array.isArray(currentUser?.assignedSites) ? currentUser.assignedSites.includes(b.siteId) : Number(b.siteId) === Number(currentUser?.assignedSite))).length
+      : (briefings || []).filter(b => b.status === 'open').length
 
     const intelligence = {
       title: 'Intelligence',
@@ -233,7 +233,7 @@ function Layout({ currentUser, onLogout, children }) {
               <div className="flex-1 overflow-hidden">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">Authenticated</p>
                 <p className="text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">
-                  {currentUser?.name} {currentUser?.surname}
+                  {currentUser?.name || 'Authorized'} {currentUser?.surname || 'User'}
                 </p>
               </div>
             </div>
