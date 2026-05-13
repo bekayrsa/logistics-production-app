@@ -29,9 +29,8 @@ export const AuthProvider = ({ children }) => {
     } else if (auth) {
       // Live Mode: Firebase Auth
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setLoading(true);
-        if (user) {
-          try {
+        try {
+          if (user) {
             // (RS) Primary Lookup by UID (Standard)
             let userData = await readData(`users/${user.uid}`);
             
@@ -43,7 +42,6 @@ export const AuthProvider = ({ children }) => {
                 // Migrate to UID-based structure immediately
                 userData = { ...legacyData, uid: user.uid };
                 await writeData(`users/${user.uid}`, userData);
-                // Optional: Delete legacy record once UID is stable
               }
             }
 
@@ -65,16 +63,20 @@ export const AuthProvider = ({ children }) => {
               await writeData(`users/${user.uid}`, newOwner);
               setCurrentUser({ ...user, ...newOwner });
             } else {
-              setCurrentUser(user);
+              // (RS) Safety Fallback: Set basic auth even if DB record is missing
+              setCurrentUser({ ...user, role: 'user', companyId: 'pending' });
             }
-          } catch (error) {
-            console.error("Auth Synchronization Error:", error);
-            setCurrentUser(user);
+          } else {
+            setCurrentUser(null);
           }
-        } else {
-          setCurrentUser(null);
+        } catch (error) {
+          console.error("Auth Synchronization Error:", error);
+          // If we have a user but DB failed, at least set the auth user
+          if (auth.currentUser) setCurrentUser(auth.currentUser);
+          else setCurrentUser(null);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       });
       return unsubscribe;
     } else {

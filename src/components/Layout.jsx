@@ -43,17 +43,19 @@ function Layout({ currentUser, onLogout, children }) {
   }, [])
 
   useEffect(() => {
+    if (!currentUser) return;
+
     const unsub = dataService.onConnectionChange(setIsConnected)
-    const unsubBriefings = dataService.subscribeToBriefings(setBriefings)
+    const unsubBriefings = dataService.subscribeToBriefings(setBriefings, currentUser.companyId)
     
     // (RS) Load tenant branding
-    dataService.getCompanyInfo(currentUser?.companyId).then(setCompanyInfo)
+    dataService.getCompanyInfo(currentUser.companyId).then(setCompanyInfo)
 
     return () => {
       unsub()
       unsubBriefings()
     }
-  }, [])
+  }, [currentUser])
 
   useEffect(() => {
     if (!isDesktop) setSidebarOpen(false)
