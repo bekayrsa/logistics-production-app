@@ -75,36 +75,35 @@ function Dashboard({ currentUser }) {
 
         // 1. Populate available sites for the filter dropdown
         if (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') {
-          setAvailableSites(sitesData)
+          setAvailableSites(sitesData || [])
         } else if (currentUser.role === 'siteManager') {
           const assignedIds = Object.keys(currentUser.assignedSites || {})
-          setAvailableSites(sitesData.filter(s => assignedIds.includes(String(s.id))))
+          setAvailableSites((sitesData || []).filter(s => assignedIds.includes(String(s.id))))
         }
 
         // 2. Initial role-based isolation (Site Managers NEVER see other sites)
         if (currentUser.role === 'siteManager') {
           const assignedIds = Object.keys(currentUser.assignedSites || {})
 
-          history = history.filter(h => assignedIds.includes(String(h.siteId)))
-          captures = captures.filter(c => assignedIds.includes(String(c.siteId)))
+          history = (history || []).filter(h => assignedIds.includes(String(h.siteId)))
+          captures = (captures || []).filter(c => assignedIds.includes(String(c.siteId)))
         }
 
         // 3. User-selected filter (For admins/managers or multi-site managers)
         if (selectedSite !== 'all') {
-          history = history.filter(h => Number(h.siteId) === Number(selectedSite))
-          captures = captures.filter(c => Number(c.siteId) === Number(selectedSite))
+          history = (history || []).filter(h => Number(h.siteId) === Number(selectedSite))
+          captures = (captures || []).filter(c => Number(c.siteId) === Number(selectedSite))
         }
 
         const today = new Date().toISOString().split('T')[0]
 
         // 4. Calculate Live Site Performance from Captures + Sites
-        // We iterate through all available sites and aggregate captures for each
         const performanceSites = (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin')
-          ? sitesData
-          : sitesData.filter(s => Object.keys(currentUser.assignedSites || {}).includes(String(s.id)))
+          ? (sitesData || [])
+          : (sitesData || []).filter(s => Object.keys(currentUser.assignedSites || {}).includes(String(s.id)))
 
         const livePerformance = performanceSites.map(site => {
-          const siteCaptures = captures.filter(c =>
+          const siteCaptures = (captures || []).filter(c =>
             c.date === today &&
             Number(c.siteId) === Number(site.id)
           )
@@ -132,7 +131,7 @@ function Dashboard({ currentUser }) {
 
         const onTarget = filteredPerformance.filter(p => p.actual >= p.target && p.target > 0).length
         const belowTarget = filteredPerformance.filter(p => p.actual < p.target && p.target > 0).length
-        const trucksUsed = [...new Set(captures.filter(c => c.date === today).map(c => c.truckId))].length
+        const trucksUsed = [...new Set((captures || []).filter(c => c.date === today).map(c => c.truckId))].length
 
         const progress = totalTarget > 0 ? Math.round((totalTons / totalTarget) * 100) : 0
 
@@ -144,8 +143,8 @@ function Dashboard({ currentUser }) {
           todayProgress: progress
         })
 
-        // Group history by date for trend analysis (using submitted production history)
-        const groupedHistory = history.reduce((acc, curr) => {
+        // Group history by date for trend analysis
+        const groupedHistory = (history || []).reduce((acc, curr) => {
           if (!acc[curr.date]) acc[curr.date] = 0
           acc[curr.date] += curr.actual
           return acc
@@ -156,7 +155,7 @@ function Dashboard({ currentUser }) {
           .sort((a, b) => a.date.localeCompare(b.date))
           .slice(-7)
 
-        const sortedCaptures = [...captures].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        const sortedCaptures = [...(captures || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
 
         setProductionHistory(sortedHistory)
         setRecentCaptures(sortedCaptures.slice(0, 5))

@@ -36,7 +36,7 @@ function AuditLog({ currentUser }) {
     return <Database size={14} className="text-slate-400" />
   }
 
-  const filteredLogs = logs.filter(log => {
+  const filteredLogs = (logs || []).filter(log => {
     const searchMatch = !filter || 
       log.performedBy?.email?.toLowerCase().includes(filter.toLowerCase()) ||
       log.performedBy?.name?.toLowerCase().includes(filter.toLowerCase()) ||

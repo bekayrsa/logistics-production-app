@@ -41,10 +41,10 @@ function Reports({ currentUser }) {
     // 2. Subscribe to Sites to populate filters
     const unsubSites = dataService.subscribeToSites((sitesData) => {
       if (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') {
-        setAvailableSites(sitesData)
+        setAvailableSites(sitesData || [])
       } else if (currentUser.role === 'siteManager') {
         const assignedIds = Object.keys(currentUser.assignedSites || {})
-        setAvailableSites(sitesData.filter(s => assignedIds.includes(String(s.id))))
+        setAvailableSites((sitesData || []).filter(s => assignedIds.includes(String(s.id))))
       }
     }, currentUser.companyId)
 
@@ -60,7 +60,7 @@ function Reports({ currentUser }) {
   }, [currentUser])
 
   useEffect(() => {
-    let result = [...allCaptures]
+    let result = [...(allCaptures || [])]
 
     // 1. Date Range Filter
     result = result.filter(c => c.date >= startDate && c.date <= endDate)

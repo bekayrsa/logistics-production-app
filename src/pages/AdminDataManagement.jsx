@@ -141,7 +141,7 @@ function AdminDataManagement({ currentUser }) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
         {/* Tab Navigation */}
         <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0">
-          {tabs.map(tab => {
+          {(tabs || []).map(tab => {
             const Icon = tab.icon
             return (
               <button
@@ -503,7 +503,7 @@ function SitesDatabase({ currentUser }) {
             </tr>
           </thead>
           <tbody>
-            {sites.map(site => (
+            {(sites || []).map(site => (
               <tr key={site.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 {editingId === site.id ? (
                   <>
@@ -519,13 +519,13 @@ function SitesDatabase({ currentUser }) {
                       <select
                         value={editData.mineId || ''}
                         onChange={(e) => {
-                          const mine = mines.find(m => m.id === Number(e.target.value))
+                          const mine = (mines || []).find(m => m.id === Number(e.target.value))
                           setEditData(prev => ({ ...prev, mineId: Number(e.target.value), mineName: mine ? mine.name : '' }))
                         }}
                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
                       >
                         <option value="">Select Mine</option>
-                        {mines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        {(mines || []).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                       </select>
                     </td>
                     <td className="px-6 py-3">
@@ -658,7 +658,7 @@ function MinesDatabase({ currentUser }) {
             </tr>
           </thead>
           <tbody>
-            {mines.map(mine => (
+            {(mines || []).map(mine => (
               <tr key={mine.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 {editingId === mine.id ? (
                   <>
@@ -785,7 +785,7 @@ function TrucksDatabase({ currentUser }) {
             </tr>
           </thead>
           <tbody>
-            {trucks.map(truck => (
+            {(trucks || []).map(truck => (
               <tr key={truck.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 {editingId === truck.id ? (
                   <>
@@ -939,7 +939,7 @@ function UsersDatabase({ currentUser }) {
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
+            {(users || []).map(user => (
               <tr key={user.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 {editingId === user.id ? (
                   <>
@@ -1097,7 +1097,7 @@ function ProjectsDatabase({ currentUser }) {
             </tr>
           </thead>
           <tbody>
-            {projects.map(project => (
+            {(projects || []).map(project => (
               <tr key={project.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 {editingId === project.id ? (
                   <>
@@ -1113,13 +1113,13 @@ function ProjectsDatabase({ currentUser }) {
                       <select
                         value={editData.mineId || ''}
                         onChange={(e) => {
-                          const mine = mines.find(m => m.id === Number(e.target.value))
+                          const mine = (mines || []).find(m => m.id === Number(e.target.value))
                           setEditData(prev => ({ ...prev, mineId: Number(e.target.value), mineName: mine ? mine.name : '' }))
                         }}
                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
                       >
                         <option value="">Select Mine</option>
-                        {mines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        {(mines || []).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                       </select>
                     </td>
                     <td className="px-6 py-3">
