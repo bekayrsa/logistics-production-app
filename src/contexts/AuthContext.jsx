@@ -72,8 +72,16 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           console.error("Auth Synchronization Error:", error);
           // If we have a user but DB failed, at least set the auth user
-          if (auth.currentUser) setCurrentUser(auth.currentUser);
-          else setCurrentUser(null);
+          if (auth.currentUser) {
+            setCurrentUser({
+              ...auth.currentUser,
+              name: auth.currentUser.displayName?.split(' ')[0] || 'User',
+              role: 'user',
+              companyId: 'pending'
+            });
+          } else {
+            setCurrentUser(null);
+          }
         } finally {
           setLoading(false);
         }
