@@ -29,34 +29,52 @@ export const AuthProvider = ({ children }) => {
     } else if (auth) {
       // Live Mode: Firebase Auth
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setLoading(true); // Ensure loading starts
+        setLoading(true);
         if (user) {
           try {
-            const isOwner = user.email === 'boiketloramaobi@gmail.com' || user.email === 'boiketloramoabi@gmail.com';
-            const safeId = user.email.replace(/[@.]/g, '_');
-            const userData = await readData(`users/${safeId}`);
+            // (RS) Primary Lookup by UID (Standard)
+            let userData = await readData(`users/${user.uid}`);
+            
+            // (RS) Bridge Logic: If not found by UID, check by SafeEmail (Legacy)
+            if (!userData) {
+              const safeId = user.email.replace(/[@.]/g, '_');
+              const legacyData = await readData(`users/${safeId}`);
+              if (legacyData) {
+                // Migrate to UID-based structure immediately
+                userData = { ...legacyData, uid: user.uid };
+                await writeData(`users/${user.uid}`, userData);
+                // Optional: Delete legacy record once UID is stable
+              }
+            }
+
+            const isOwner = user.email === 'boiketloramoabi@gmail.com' || user.email === 'boiketloramoabi@gmail.com';
             
             if (userData) {
               setCurrentUser({ ...user, ...userData, role: isOwner ? 'superAdmin' : userData.role });
             } else if (isOwner) {
-              // Superadmin Override: Force superAdmin role for the owner even if DB record is missing
-              setCurrentUser({ ...user, role: 'superAdmin', name: 'System', surname: 'Owner', companyId: 'master' });
+              // Superadmin Provisioning: Create record if missing
+              const newOwner = {
+                uid: user.uid,
+                email: user.email,
+                name: 'System',
+                surname: 'Owner',
+                role: 'superAdmin',
+                companyId: 'master',
+                createdAt: new Date().toISOString()
+              };
+              await writeData(`users/${user.uid}`, newOwner);
+              setCurrentUser({ ...user, ...newOwner });
             } else {
               setCurrentUser(user);
             }
           } catch (error) {
-            console.error("Error fetching user data:", error);
-            // Even if DB fails, allow owner in
-            if (user.email === 'boiketloramaobi@gmail.com' || user.email === 'boiketloramoabi@gmail.com') {
-              setCurrentUser({ ...user, role: 'superAdmin', name: 'System', surname: 'Owner', companyId: 'master' });
-            } else {
-              setCurrentUser(user);
-            }
+            console.error("Auth Synchronization Error:", error);
+            setCurrentUser(user);
           }
         } else {
           setCurrentUser(null);
         }
-        setLoading(false); // ALWAYS set loading to false here
+        setLoading(false);
       });
       return unsubscribe;
     } else {

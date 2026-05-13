@@ -4,34 +4,50 @@
       ".read": "auth != null",
       ".indexOn": ["email", "role", "companyId"],
       "$user_id": {
-        ".write": "auth != null && (auth.token.email.replace('.', '_').replace('@', '_') == $user_id || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' && ((newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == newData.child('companyId').val()) || (!newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == data.child('companyId').val()))))"
+        ".write": "auth != null && (auth.uid == $user_id || data.child('uid').val() == auth.uid || root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('role').val() == 'admin' && ((newData.exists() && root.child('users').child(auth.uid).child('companyId').val() == newData.child('companyId').val()) || (!newData.exists() && root.child('users').child(auth.uid).child('companyId').val() == data.child('companyId').val()))))"
       }
     },
     "companies": {
       "$companyId": {
-        ".read": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin')",
-        ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin'))",
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('companyId').val() == $companyId || root.child('users').child(auth.uid).child('role').val() == 'superAdmin')",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && root.child('users').child(auth.uid).child('role').val() == 'admin'))",
         "sites": { 
           ".indexOn": ["status"],
           "$siteId": {
-            ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin')"
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && root.child('users').child(auth.uid).child('role').val() == 'admin'))"
           }
         },
-        "trucks": { ".indexOn": ["status", "type"] },
+        "trucks": { 
+          ".indexOn": ["status", "type"],
+          "$truckId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && root.child('users').child(auth.uid).child('role').val() == 'admin'))"
+          }
+        },
+        "projects": {
+          "$projectId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && root.child('users').child(auth.uid).child('role').val() == 'admin'))"
+          }
+        },
+        "mines": {
+          "$mineId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && root.child('users').child(auth.uid).child('role').val() == 'admin'))"
+          }
+        },
         "captures": { 
           ".indexOn": ["date", "siteId", "truckId"],
           "$captureId": {
-            ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists()))"
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && (root.child('users').child(auth.uid).child('role').val() == 'admin' || root.child('users').child(auth.uid).child('assignedSites').child(newData.child('siteId').val()).exists())))"
           }
         },
         "production": { 
           ".indexOn": ["date", "siteId"],
           "$prodId": {
-            ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'manager' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists()))"
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'superAdmin' || (root.child('users').child(auth.uid).child('companyId').val() == $companyId && (root.child('users').child(auth.uid).child('role').val() == 'admin' || root.child('users').child(auth.uid).child('role').val() == 'manager')))"
           }
         },
         "auditLogs": {
-           ".indexOn": ["timestamp", "action", "entityType"]
+           ".indexOn": ["timestamp", "action", "entityType"],
+           ".write": "auth != null && (root.child('users').child(auth.uid).child('companyId').val() == $companyId || root.child('users').child(auth.uid).child('role').val() == 'superAdmin')"
         }
       }
     }

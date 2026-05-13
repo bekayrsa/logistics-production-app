@@ -230,7 +230,7 @@ export const dataService = {
     }
   },
 
-  createCapture: async (captureData, companyId) => {
+  createCapture: async (captureData, companyId, currentUser) => {
     if (isDemo) {
       const captures = localDb.getData('captures') || []
       if (captureData.id) {
@@ -257,6 +257,19 @@ export const dataService = {
         captureLoad: captureData.tons
       }
       await set(ref(database, dataService.getPath(`captures/${id}`, companyId)), extendedData)
+      
+      // (RS) Forensic Audit
+      if (currentUser) {
+        dataService.logAudit({
+          companyId,
+          user: currentUser,
+          action: 'CREATE_CAPTURE',
+          entityType: 'CAPTURE',
+          entityId: id,
+          newValue: extendedData
+        })
+      }
+      
       return extendedData
     }
   },
@@ -307,7 +320,7 @@ export const dataService = {
     }
   },
 
-  saveProduction: async (prodData, companyId) => {
+  saveProduction: async (prodData, companyId, currentUser) => {
     if (isDemo) {
       const production = localDb.getData('production') || []
       const index = production.findIndex(p => p.id === prodData.id)
@@ -321,6 +334,18 @@ export const dataService = {
       ensureDatabase();
       const id = prodData.id || push(ref(database, dataService.getPath('production', companyId))).key
       await set(ref(database, dataService.getPath(`production/${id}`, companyId)), { ...prodData, id })
+      
+      // (RS) Forensic Audit
+      if (currentUser) {
+        dataService.logAudit({
+          companyId,
+          user: currentUser,
+          action: 'FINALIZE_PRODUCTION',
+          entityType: 'PRODUCTION_REPORT',
+          entityId: id,
+          newValue: prodData
+        })
+      }
     }
   },
 
@@ -334,7 +359,7 @@ export const dataService = {
     }
   },
 
-  saveSubmittedDay: async (dayData, companyId) => {
+  saveSubmittedDay: async (dayData, companyId, currentUser) => {
     if (isDemo) {
       const submitted = localDb.getData('submittedDays') || []
       localDb.saveData('submittedDays', [...submitted, dayData])
@@ -342,7 +367,20 @@ export const dataService = {
       ensureDatabase();
       const subRef = ref(database, dataService.getPath('submittedDays', companyId))
       const newRef = push(subRef)
-      await set(newRef, { ...dayData, id: newRef.key })
+      const data = { ...dayData, id: newRef.key }
+      await set(newRef, data)
+      
+      // (RS) Forensic Audit
+      if (currentUser) {
+        dataService.logAudit({
+          companyId,
+          user: currentUser,
+          action: 'SUBMIT_DAY_REPORT',
+          entityType: 'DAY_SUBMISSION',
+          entityId: newRef.key,
+          newValue: data
+        })
+      }
     }
   },
 
@@ -515,18 +553,20 @@ export const dataService = {
       throw new Error("Security Violation: Only a SuperAdmin can provision another SuperAdmin.");
     }
 
+    // (RS) Identity Resolution: Prioritize UID for production stability
+    const userId = userData.uid || userData.id || userData.email?.replace(/[@.]/g, '_')
+
     if (isDemo) {
       const users = localDb.getData('users') || []
-      const index = users.findIndex(u => u.id === userData.id)
+      const index = users.findIndex(u => u.id === userId || u.email === userData.email)
       if (index > -1) {
-        users[index] = userData
+        users[index] = { ...userData, id: userId }
         localDb.saveData('users', users)
       } else {
-        localDb.saveData('users', [...users, userData])
+        localDb.saveData('users', [...users, { ...userData, id: userId }])
       }
     } else {
-      const id = userData.id || userData.email.replace(/[@.]/g, '_')
-      await firebaseDb.writeData(`users/${id}`, userData)
+      await firebaseDb.writeData(`users/${userId}`, { ...userData, id: userId })
     }
 
     // Record Audit Event

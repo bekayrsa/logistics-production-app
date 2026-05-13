@@ -174,8 +174,8 @@ function Capture({ currentUser }) {
       loadsPerTruck: totalLoads, totalTons, target, actual: totalTons,
       variance: Math.round(((totalTons - target) / target) * 100),
       status: totalTons >= target ? 'On Target' : 'Below Target'
-    }, currentUser.companyId)
-    await dataService.saveSubmittedDay({ date: today, siteId: site.id }, currentUser.companyId)
+    }, currentUser.companyId, currentUser)
+    await dataService.saveSubmittedDay({ date: today, siteId: site.id }, currentUser.companyId, currentUser)
     setPendingEntries([])
     setFailureReport({ reasonCategory: '', explanation: '', delayFactors: [] })
     setShowFailureModal(false)
