@@ -62,24 +62,21 @@ function AdminDataManagement({ currentUser }) {
       // For now, we'll re-save the capture with its original ID
       await dataService.createCapture(editData, currentUser.companyId)
 
-      // Update local state
-      setCaptures(prev => prev.map(c => (c.id === editingId ? editData : c)))
+      await dataService.saveCapture(editData, currentUser.companyId, currentUser)
       setEditingId(null)
-      setEditData({})
-
-      // In a real app, recalculateProduction would be a Cloud Function or complex service
-      // alert('Production totals will be updated on the next refresh.')
+    } catch (err) {
+      alert('Save failed: ' + err.message)
     } finally {
       setLoading(false)
     }
   }
 
   const handleDeleteCapture = async (id) => {
-    if (window.confirm('Are you sure you want to delete this capture? This will affect today\'s production totals.')) {
+    if (window.confirm('Are you sure you want to delete this capture?')) {
       try {
-        await dataService.deleteCapture(id, currentUser.companyId)
+        await dataService.deleteCapture(id, currentUser.companyId, currentUser)
       } catch (err) {
-        alert('Failed to delete capture: ' + err.message)
+        alert('Delete failed: ' + err.message)
       }
     }
   }
@@ -468,14 +465,14 @@ function SitesDatabase({ currentUser }) {
   }
 
   const handleSave = async () => {
-    await dataService.saveSite(editData, currentUser.companyId)
+    await dataService.saveSite(editData, currentUser.companyId, currentUser)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this site? This action cannot be undone.')) {
       try {
-        await dataService.deleteSite(id, currentUser.companyId)
+        await dataService.deleteSite(id, currentUser.companyId, currentUser)
       } catch (err) {
         alert('Failed to delete site: ' + err.message)
       }
@@ -625,14 +622,14 @@ function MinesDatabase({ currentUser }) {
   }
 
   const handleSave = async () => {
-    await dataService.saveMine(editData, currentUser.companyId)
+    await dataService.saveMine(editData, currentUser.companyId, currentUser)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this mine? This action cannot be undone.')) {
       try {
-        await dataService.deleteMine(id, currentUser.companyId)
+        await dataService.deleteMine(id, currentUser.companyId, currentUser)
       } catch (err) {
         alert('Failed to delete mine: ' + err.message)
       }
@@ -750,14 +747,14 @@ function TrucksDatabase({ currentUser }) {
   }
 
   const handleSave = async () => {
-    await dataService.saveTruck(editData, currentUser.companyId)
+    await dataService.saveTruck(editData, currentUser.companyId, currentUser)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this truck? This action cannot be undone.')) {
       try {
-        await dataService.deleteTruck(id, currentUser.companyId)
+        await dataService.deleteTruck(id, currentUser.companyId, currentUser)
       } catch (err) {
         alert('Failed to delete truck: ' + err.message)
       }
@@ -980,6 +977,7 @@ function UsersDatabase({ currentUser }) {
                         <option value="admin">Admin</option>
                         <option value="manager">Manager</option>
                         <option value="siteManager">Site Manager</option>
+                        {currentUser?.role === 'superAdmin' && <option value="superAdmin">System SuperAdmin</option>}
                       </select>
                     </td>
                     <td className="px-6 py-3">
@@ -1063,14 +1061,14 @@ function ProjectsDatabase({ currentUser }) {
   }
 
   const handleSave = async () => {
-    await dataService.saveProject(editData, currentUser.companyId)
+    await dataService.saveProject(editData, currentUser.companyId, currentUser)
     setEditingId(null)
   }
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
-        await dataService.deleteProject(id, currentUser.companyId)
+        await dataService.deleteProject(id, currentUser.companyId, currentUser)
       } catch (err) {
         alert('Failed to delete project: ' + err.message)
       }

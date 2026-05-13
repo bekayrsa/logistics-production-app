@@ -118,7 +118,7 @@ export const dataService = {
     }
   },
 
-  saveSite: async (siteData, companyId) => {
+  saveSite: async (siteData, companyId, currentUser) => {
     if (isDemo) {
       const sites = localDb.getData('sites') || []
       const index = sites.findIndex(s => s.id === siteData.id)
@@ -132,6 +132,18 @@ export const dataService = {
       const id = siteData.id || Date.now().toString()
       await firebaseDb.writeData(dataService.getPath(`sites/${id}`, companyId), siteData)
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: siteData.id ? 'UPDATE' : 'CREATE',
+        entityType: 'SITE',
+        entityId: siteData.id || 'new',
+        newValue: siteData
+      })
+    }
   },
 
   // Trucks
@@ -144,7 +156,7 @@ export const dataService = {
     }
   },
 
-  saveTruck: async (truckData, companyId) => {
+  saveTruck: async (truckData, companyId, currentUser) => {
     if (isDemo) {
       const trucks = localDb.getData('trucks') || []
       const index = trucks.findIndex(t => t.id === truckData.id)
@@ -158,12 +170,25 @@ export const dataService = {
       const id = truckData.id || Date.now().toString()
       await firebaseDb.writeData(dataService.getPath(`trucks/${id}`, companyId), truckData)
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: truckData.id ? 'UPDATE' : 'CREATE',
+        entityType: 'TRUCK',
+        entityId: truckData.id || 'new',
+        newValue: truckData
+      })
+    }
   },
 
   // Captures
   getCaptures: async (companyId) => {
     if (isDemo) {
-      return localDb.getData('captures') || []
+      const data = localDb.getData('captures') || []
+      return companyId === 'master' ? data : data.filter(c => c.companyId === companyId)
     } else {
       const data = await firebaseDb.readData(dataService.getPath('captures', companyId))
       return data ? Object.values(data).filter(Boolean) : []
@@ -248,7 +273,8 @@ export const dataService = {
   // Production
   getProduction: async (companyId) => {
     if (isDemo) {
-      return localDb.getData('production') || []
+      const data = localDb.getData('production') || []
+      return companyId === 'master' ? data : data.filter(p => p.companyId === companyId)
     } else {
       const data = await firebaseDb.readData(dataService.getPath('production', companyId))
       return data ? Object.values(data).filter(Boolean) : []
@@ -298,7 +324,7 @@ export const dataService = {
   subscribeToCaptures: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('captures') || []
-      callback(data)
+      callback(companyId === 'master' ? data : data.filter(c => c.companyId === companyId))
       return () => {}
     } else {
       if (!database) {
@@ -349,7 +375,7 @@ export const dataService = {
   subscribeToSites: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('sites') || []
-      callback(data)
+      callback(companyId === 'master' ? data : data.filter(s => s.companyId === companyId))
       return () => {}
     } else {
       if (!database) return () => {};
@@ -365,7 +391,7 @@ export const dataService = {
   subscribeToTrucks: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('trucks') || []
-      callback(data)
+      callback(companyId === 'master' ? data : data.filter(t => t.companyId === companyId))
       return () => {}
     } else {
       if (!database) return () => {};
@@ -400,7 +426,7 @@ export const dataService = {
   subscribeToProjects: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('projects') || []
-      callback(data)
+      callback(companyId === 'master' ? data : data.filter(p => p.companyId === companyId))
       return () => {}
     } else {
       if (!database) return () => {};
@@ -416,7 +442,7 @@ export const dataService = {
   subscribeToMines: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('mines') || []
-      callback(data)
+      callback(companyId === 'master' ? data : data.filter(m => m.companyId === companyId))
       return () => {}
     } else {
       if (!database) return () => {};
@@ -458,6 +484,11 @@ export const dataService = {
   },
 
   saveUser: async (userData, companyId, currentUser) => {
+    // (RS) Security: Only superAdmin can promote to superAdmin
+    if (userData.role === 'superAdmin' && currentUser?.role !== 'superAdmin') {
+      throw new Error("Security Violation: Only a SuperAdmin can provision another SuperAdmin.");
+    }
+
     if (isDemo) {
       const users = localDb.getData('users') || []
       const index = users.findIndex(u => u.id === userData.id)
@@ -495,7 +526,7 @@ export const dataService = {
     }
   },
 
-  saveProject: async (projectData, companyId) => {
+  saveProject: async (projectData, companyId, currentUser) => {
     if (isDemo) {
       const projects = localDb.getData('projects') || []
       const index = projects.findIndex(p => p.id === projectData.id)
@@ -509,6 +540,18 @@ export const dataService = {
       const id = projectData.id || Date.now().toString()
       await firebaseDb.writeData(dataService.getPath(`projects/${id}`, companyId), projectData)
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: projectData.id ? 'UPDATE' : 'CREATE',
+        entityType: 'PROJECT',
+        entityId: projectData.id || 'new',
+        newValue: projectData
+      })
+    }
   },
 
   // Mines
@@ -521,7 +564,7 @@ export const dataService = {
     }
   },
 
-  saveMine: async (mineData, companyId) => {
+  saveMine: async (mineData, companyId, currentUser) => {
     if (isDemo) {
       const mines = localDb.getData('mines') || []
       const index = mines.findIndex(m => m.id === mineData.id)
@@ -534,6 +577,18 @@ export const dataService = {
     } else {
       const id = mineData.id || Date.now().toString()
       await firebaseDb.writeData(dataService.getPath(`mines/${id}`, companyId), mineData)
+    }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: mineData.id ? 'UPDATE' : 'CREATE',
+        entityType: 'MINE',
+        entityId: mineData.id || 'new',
+        newValue: mineData
+      })
     }
   },
 
@@ -591,57 +646,129 @@ export const dataService = {
   },
 
   // Delete Operations
-  deleteSite: async (id, companyId) => {
+  deleteSite: async (id, companyId, currentUser) => {
     if (isDemo) {
       const sites = localDb.getData('sites') || []
       localDb.saveData('sites', sites.filter(s => s.id !== id))
     } else {
       await firebaseDb.deleteData(dataService.getPath(`sites/${id}`, companyId))
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: 'DELETE_SITE',
+        entityType: 'SITE',
+        entityId: id,
+        oldValue: { id }
+      })
+    }
   },
 
-  deleteTruck: async (id, companyId) => {
+  deleteTruck: async (id, companyId, currentUser) => {
     if (isDemo) {
       const trucks = localDb.getData('trucks') || []
       localDb.saveData('trucks', trucks.filter(t => t.id !== id))
     } else {
       await firebaseDb.deleteData(dataService.getPath(`trucks/${id}`, companyId))
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: 'DELETE_TRUCK',
+        entityType: 'TRUCK',
+        entityId: id,
+        oldValue: { id }
+      })
+    }
   },
 
-  deleteUser: async (id) => {
+  deleteUser: async (id, companyId, currentUser) => {
     if (isDemo) {
       const users = localDb.getData('users') || []
       localDb.saveData('users', users.filter(u => u.id !== id))
     } else {
       await firebaseDb.deleteData(`users/${id}`)
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: 'DELETE_USER',
+        entityType: 'USER',
+        entityId: id,
+        oldValue: { id }
+      })
+    }
   },
 
-  deleteProject: async (id, companyId) => {
+  deleteProject: async (id, companyId, currentUser) => {
     if (isDemo) {
       const projects = localDb.getData('projects') || []
       localDb.saveData('projects', projects.filter(p => p.id !== id))
     } else {
       await firebaseDb.deleteData(dataService.getPath(`projects/${id}`, companyId))
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: 'DELETE_PROJECT',
+        entityType: 'PROJECT',
+        entityId: id,
+        oldValue: { id }
+      })
+    }
   },
 
-  deleteMine: async (id, companyId) => {
+  deleteMine: async (id, companyId, currentUser) => {
     if (isDemo) {
       const mines = localDb.getData('mines') || []
       localDb.saveData('mines', mines.filter(m => m.id !== id))
     } else {
       await firebaseDb.deleteData(dataService.getPath(`mines/${id}`, companyId))
     }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: 'DELETE_MINE',
+        entityType: 'MINE',
+        entityId: id,
+        oldValue: { id }
+      })
+    }
   },
 
-  deleteCapture: async (id, companyId) => {
+  deleteCapture: async (id, companyId, currentUser) => {
     if (isDemo) {
       const captures = localDb.getData('captures') || []
       localDb.saveData('captures', captures.filter(c => c.id !== id))
     } else {
       await firebaseDb.deleteData(dataService.getPath(`captures/${id}`, companyId))
+    }
+
+    // Record Audit Event
+    if (currentUser && companyId) {
+      dataService.logAudit({
+        companyId,
+        user: currentUser,
+        action: 'DELETE_CAPTURE',
+        entityType: 'CAPTURE',
+        entityId: id,
+        oldValue: { id }
+      })
     }
   },
 
@@ -649,7 +776,7 @@ export const dataService = {
   subscribeToBriefings: (callback, companyId) => {
     if (isDemo) {
       const data = localDb.getData('briefings') || []
-      callback(data)
+      callback(companyId === 'master' ? data : data.filter(b => b.companyId === companyId))
       return () => {}
     } else {
       if (!database) return () => {};

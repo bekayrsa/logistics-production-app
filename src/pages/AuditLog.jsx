@@ -8,18 +8,23 @@ import {
 } from 'lucide-react'
 
 function AuditLog({ currentUser }) {
-  const [logs, setLogs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('')
-  const [typeFilter, setTypeFilter] = useState('ALL')
+  const [selectedCompany, setSelectedCompany] = useState(currentUser.companyId)
+  const [companies, setCompanies] = useState([])
+
+  useEffect(() => {
+    if (currentUser.role === 'superAdmin') {
+      dataService.getCompanies().then(setCompanies)
+    }
+  }, [currentUser])
 
   useEffect(() => {
     loadLogs()
-  }, [])
+  }, [selectedCompany])
 
   const loadLogs = async () => {
     setLoading(true)
-    const data = await dataService.getAuditLogs(currentUser.companyId)
+    const targetCompany = currentUser.role === 'superAdmin' ? selectedCompany : currentUser.companyId
+    const data = await dataService.getAuditLogs(targetCompany)
     setLogs(data)
     setLoading(false)
   }
@@ -65,6 +70,20 @@ function AuditLog({ currentUser }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+          {currentUser.role === 'superAdmin' && (
+            <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-6 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-blue-600">Company:</span>
+              <select 
+                value={selectedCompany} 
+                onChange={e => setSelectedCompany(e.target.value)}
+                className="bg-transparent border-none text-sm font-black text-blue-600 focus:ring-0 cursor-pointer"
+              >
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name || c.companyName || c.id}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 

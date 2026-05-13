@@ -43,11 +43,13 @@ function Dashboard({ currentUser }) {
   const [recentCaptures, setRecentCaptures] = useState([])
   const [briefings, setBriefings] = useState([])
   const [sitePerformance, setSitePerformance] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [availableSites, setAvailableSites] = useState([])
-  const [selectedSite, setSelectedSite] = useState('all')
+  const [selectedCompany, setSelectedCompany] = useState(currentUser.companyId)
+  const [companies, setCompanies] = useState([])
 
   useEffect(() => {
+    if (currentUser?.role === 'superAdmin') {
+      dataService.getCompanies().then(setCompanies)
+    }
     if (currentUser?.role === 'siteManager') {
       setSelectedSite(String(currentUser.assignedSite))
     }
@@ -59,12 +61,13 @@ function Dashboard({ currentUser }) {
     const fetchData = async () => {
       setLoading(true)
       try {
+        const targetCompany = currentUser.role === 'superAdmin' ? selectedCompany : currentUser.companyId
         let [history, captures, sitesData, briefingsData] = await Promise.all([
-          dataService.getProduction(currentUser.companyId),
-          dataService.getCaptures(currentUser.companyId),
-          dataService.getSites(currentUser.companyId),
+          dataService.getProduction(targetCompany),
+          dataService.getCaptures(targetCompany),
+          dataService.getSites(targetCompany),
           new Promise((resolve) => {
-            dataService.subscribeToBriefings(resolve, currentUser.companyId)() // Quick fetch for initial load
+            dataService.subscribeToBriefings(resolve, targetCompany)()
           })
         ])
 
@@ -96,7 +99,11 @@ function Dashboard({ currentUser }) {
 
         // 4. Calculate Live Site Performance from Captures + Sites
         // We iterate through all available sites and aggregate captures for each
-        const livePerformance = availableSites.map(site => {
+        const performanceSites = (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin')
+          ? sitesData
+          : sitesData.filter(s => Object.keys(currentUser.assignedSites || {}).includes(String(s.id)))
+
+        const livePerformance = performanceSites.map(site => {
           const siteCaptures = captures.filter(c =>
             c.date === today &&
             Number(c.siteId) === Number(site.id)
@@ -163,16 +170,17 @@ function Dashboard({ currentUser }) {
 
     fetchData()
 
-    const unsubCaptures = dataService.subscribeToCaptures(() => fetchData(), currentUser.companyId)
-    const unsubProd = dataService.subscribeToProduction(() => fetchData(), currentUser.companyId)
-    const unsubBriefings = dataService.subscribeToBriefings(setBriefings, currentUser.companyId)
+    const targetCompany = currentUser.role === 'superAdmin' ? selectedCompany : currentUser.companyId
+    const unsubCaptures = dataService.subscribeToCaptures(() => fetchData(), targetCompany)
+    const unsubProd = dataService.subscribeToProduction(() => fetchData(), targetCompany)
+    const unsubBriefings = dataService.subscribeToBriefings(setBriefings, targetCompany)
 
     return () => {
       unsubCaptures()
       unsubProd()
       unsubBriefings()
     }
-  }, [currentUser, selectedSite])
+  }, [currentUser, selectedSite, selectedCompany])
 
   if (!currentUser) return null
 
@@ -207,31 +215,49 @@ function Dashboard({ currentUser }) {
 
   return (
     <div className="space-y-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-4">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">Production Overview</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Live Ops Monitor</p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          {currentUser.role === 'superAdmin' && (
+            <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800/50">
+              <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">Company:</span>
+              <select
+                value={selectedCompany}
+                onChange={(e) => setSelectedCompany(e.target.value)}
+                className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 focus:ring-0 cursor-pointer p-0"
+              >
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name || c.companyName || c.id}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <button
             onClick={() => exportToCSV(sitePerformance, `executive_summary_${new Date().toISOString().split('T')[0]}.csv`)}
             className="flex items-center gap-2 px-5 py-3 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-600/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
           >
             <FileText size={16} />
-            Export Summary
+            Export
           </button>
 
-          {availableSites.length > 1 && (
-            <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800/50">
-              <MapPin size={18} className="text-blue-600" />
-              <select
-                value={selectedSite}
-                onChange={(e) => setSelectedSite(e.target.value)}
-                className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 focus:ring-0 cursor-pointer p-0"
-              >
-                {currentUser.role !== 'siteManager' && <option value="all">Global View</option>}
-                {availableSites.map(site => (
-                  <option key={site.id} value={site.id}>{site.siteName}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800/50">
+            <MapPin size={18} className="text-blue-600" />
+            <select
+              value={selectedSite}
+              onChange={(e) => setSelectedSite(e.target.value)}
+              className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 focus:ring-0 cursor-pointer p-0"
+            >
+              <option value="all">Global Sites</option>
+              {availableSites.map(site => (
+                <option key={site.id} value={site.id}>{site.siteName}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

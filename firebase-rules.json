@@ -1,34 +1,37 @@
 {
   "rules": {
-    ".read": "auth != null",
     "users": {
-      ".indexOn": ["email", "role"],
+      ".read": "auth != null",
+      ".indexOn": ["email", "role", "companyId"],
       "$user_id": {
-        ".write": "auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email == 'boiketloramoabi@gmail.com' || auth.token.email.replace('.', '_').replace('@', '_') == $user_id"
+        ".write": "auth != null && (auth.token.email.replace('.', '_').replace('@', '_') == $user_id || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' && ((newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == newData.child('companyId').val()) || (!newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == data.child('companyId').val()))))"
       }
     },
     "companies": {
       "$companyId": {
-        ".read": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId || auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email == 'boiketloramoabi@gmail.com'",
-        ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId || auth.token.email == 'boiketloramaobi@gmail.com' || auth.token.email == 'boiketloramoabi@gmail.com'",
+        ".read": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin')",
+        ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('companyId').val() == $companyId && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin'))",
         "sites": { 
           ".indexOn": ["status"],
           "$siteId": {
-            ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || auth.token.email == 'boiketloramaobi@gmail.com'"
+            ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin')"
           }
         },
         "trucks": { ".indexOn": ["status", "type"] },
         "captures": { 
           ".indexOn": ["date", "siteId", "truckId"],
           "$captureId": {
-            ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists() || auth.token.email == 'boiketloramaobi@gmail.com'"
+            ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists()))"
           }
         },
         "production": { 
           ".indexOn": ["date", "siteId"],
           "$prodId": {
-            ".write": "root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'manager' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists() || auth.token.email == 'boiketloramaobi@gmail.com'"
+            ".write": "auth != null && (root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'admin' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'manager' || root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('role').val() == 'superAdmin' || (newData.exists() && root.child('users').child(auth.token.email.replace('.', '_').replace('@', '_')).child('assignedSites').child(newData.child('siteId').val()).exists()))"
           }
+        },
+        "auditLogs": {
+           ".indexOn": ["timestamp", "action", "entityType"]
         }
       }
     }

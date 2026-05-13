@@ -56,7 +56,7 @@ function Users({ currentUser }) {
       }
     }
 
-    await dataService.saveUser(userData, currentUser.companyId)
+    await dataService.saveUser(userData, currentUser.companyId, currentUser)
     setIsEditing(false)
     setEditingUser(null)
     setFormData({ name: '', email: '', role: 'siteManager', assignedSites: [] })
@@ -79,7 +79,7 @@ function Users({ currentUser }) {
   const handleDelete = async (userId) => {
     if (window.confirm('Confirm permanent deletion of this user profile?')) {
       try {
-        await dataService.deleteUser(userId, currentUser.companyId)
+        await dataService.deleteUser(userId, currentUser.companyId, currentUser)
       } catch (err) {
         alert('Deletion failed: ' + err.message)
       }
