@@ -21,7 +21,7 @@ function AdminDataManagement({ currentUser }) {
     const unsubCaptures = dataService.subscribeToCaptures((allCaptures) => {
       const filtered = allCaptures
         .filter(c => c.date === filterDate)
-        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .sort((a, b) => new Date(b.timestamp || b.captureTime || 0) - new Date(a.timestamp || a.captureTime || 0))
       setCaptures(filtered)
       setLoading(false)
     }, currentUser.companyId)

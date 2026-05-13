@@ -62,16 +62,11 @@ function Dashboard({ currentUser }) {
       setLoading(true)
       try {
         const targetCompany = currentUser.role === 'superAdmin' ? selectedCompany : currentUser.companyId
-        let [history, captures, sitesData, briefingsData] = await Promise.all([
+        let [history, captures, sitesData] = await Promise.all([
           dataService.getProduction(targetCompany),
           dataService.getCaptures(targetCompany),
-          dataService.getSites(targetCompany),
-          new Promise((resolve) => {
-            dataService.subscribeToBriefings(resolve, targetCompany)()
-          })
+          dataService.getSites(targetCompany)
         ])
-
-        setBriefings(briefingsData || [])
 
         // 1. Populate available sites for the filter dropdown
         if (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') {
@@ -155,7 +150,9 @@ function Dashboard({ currentUser }) {
           .sort((a, b) => a.date.localeCompare(b.date))
           .slice(-7)
 
-        const sortedCaptures = [...(captures || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        const sortedCaptures = [...(captures || [])].sort((a, b) => 
+          new Date(b.timestamp || b.captureTime || 0) - new Date(a.timestamp || a.captureTime || 0)
+        )
 
         setProductionHistory(sortedHistory)
         setRecentCaptures(sortedCaptures.slice(0, 5))

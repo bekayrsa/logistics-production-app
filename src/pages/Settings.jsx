@@ -36,12 +36,10 @@ function Settings({ currentUser }) {
     e.preventDefault()
     setLoading(true)
     try {
-      // In a real app, this would update the user document in Firestore
-      // For this demo, we'll simulate success and alert the user
-      await new Promise(resolve => setTimeout(resolve, 800))
-      setMessage({ type: 'success', text: 'Profile updated successfully (Simulated)' })
+      await dataService.saveUser({ ...currentUser, ...profileData }, currentUser.companyId, currentUser)
+      setMessage({ type: 'success', text: 'Profile updated successfully.' })
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to update profile.' })
+      setMessage({ type: 'error', text: 'Failed to update profile: ' + err.message })
     } finally {
       setLoading(false)
     }

@@ -45,7 +45,8 @@ function Users({ currentUser }) {
 
     if (!isEditing && APP_MODE !== 'demo' && secondaryAuth) {
       try {
-        await createUserWithEmailAndPassword(secondaryAuth, formData.email, "welcome123");
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.email, "welcome123");
+        userData.uid = userCredential.user.uid;
         await sendPasswordResetEmail(secondaryAuth, formData.email);
       } catch (err) {
         console.error("Firebase Auth Error:", err);

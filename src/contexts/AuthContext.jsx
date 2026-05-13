@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       console.error("Firebase Auth not initialized. Check your credentials.");
     }
-  }, [isDemo]);
+  }, []); // (RS) Fixed initialization loop: Run once on mount
 
   const login = async (email, password) => {
     if (isDemo) {
