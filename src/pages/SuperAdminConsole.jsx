@@ -46,7 +46,7 @@ function SuperAdminConsole({ currentUser }) {
         status: 'Active'
       }
       
-      await dataService.saveCompany(companyData)
+      await dataService.saveCompany(companyData, currentUser)
 
       // 2. Provision the Company Admin
       const adminData = {
@@ -58,7 +58,7 @@ function SuperAdminConsole({ currentUser }) {
         createdAt: new Date().toISOString()
       }
 
-      await dataService.saveUser(adminData)
+      await dataService.saveUser(adminData, companyId, currentUser)
       
       // 3. Initialize Company Info
       await dataService.saveCompanyInfo({
@@ -78,7 +78,7 @@ function SuperAdminConsole({ currentUser }) {
 
   const handleDelete = async (id) => {
     if (window.confirm('WARNING: Permanent deletion of a company will orphan all its data. Proceed?')) {
-      await dataService.deleteCompany(id)
+      await dataService.deleteCompany(id, currentUser)
       loadCompanies()
     }
   }

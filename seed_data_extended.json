@@ -4,7 +4,7 @@
       "name": "Super",
       "surname": "Admin",
       "email": "boiketloramoabi@gmail.com",
-      "role": "admin",
+      "role": "superAdmin",
       "companyId": "master"
     },
     "bekayrsa_gmail_com": {
@@ -45,6 +45,14 @@
   },
   "companies": {
     "Company1": {
+      "mines": {
+        "mine_001": { "id": "mine_001", "name": "Grootegeluk Complex", "operation": "Exxaro", "location": "Lephalale", "status": "Active" },
+        "mine_002": { "id": "mine_002", "name": "Mogalakwena North", "operation": "Anglo Platinum", "location": "Mokopane", "status": "Active" }
+      },
+      "projects": {
+        "proj_001": { "id": "proj_001", "projectName": "Coal Expansion H1", "mine": "Grootegeluk Complex", "mineId": "mine_001", "status": "Active" },
+        "proj_002": { "id": "proj_002", "projectName": "Platinum Telemetry", "mine": "Mogalakwena North", "mineId": "mine_002", "status": "Active" }
+      },
       "sites": {
         "site_001": {
           "id": "site_001",

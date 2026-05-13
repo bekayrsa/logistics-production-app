@@ -83,9 +83,10 @@ export const dataService = {
     return data ? Object.values(data).filter(Boolean) : []
   },
 
-  saveCompany: async (companyData) => {
+  saveCompany: async (companyData, currentUser) => {
     const id = companyData.id || `comp_${Date.now()}`
     const data = { ...companyData, id }
+    
     if (isDemo) {
       const current = localDb.getData('companies') || []
       const index = current.findIndex(c => c.id === id)
@@ -96,15 +97,40 @@ export const dataService = {
     } else {
       await firebaseDb.writeData(`companies/${id}`, data)
     }
+
+    // (RS) Forensic Audit
+    if (currentUser) {
+       dataService.logAudit({
+         companyId: 'master', // Global action
+         user: currentUser,
+         action: 'CREATE_COMPANY',
+         entityType: 'COMPANY',
+         entityId: id,
+         newValue: data
+       })
+    }
+    
     return data
   },
 
-  deleteCompany: async (companyId) => {
+  deleteCompany: async (companyId, currentUser) => {
     if (isDemo) {
       const current = localDb.getData('companies') || []
       localDb.saveData('companies', current.filter(c => c.id !== companyId))
     } else {
       await firebaseDb.deleteData(`companies/${companyId}`)
+    }
+
+    // (RS) Forensic Audit
+    if (currentUser) {
+       dataService.logAudit({
+         companyId: 'master',
+         user: currentUser,
+         action: 'DELETE_COMPANY',
+         entityType: 'COMPANY',
+         entityId: companyId,
+         oldValue: { id: companyId }
+       })
     }
   },
 
