@@ -72,14 +72,21 @@ function Dashboard({ currentUser }) {
         if (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin') {
           setAvailableSites(sitesData || [])
         } else if (currentUser.role === 'siteManager') {
-          const assignedIds = Object.keys(currentUser.assignedSites || {})
+          const assigned = currentUser?.assignedSites
+          const assignedIds = Array.isArray(assigned) 
+            ? assigned.map(String) 
+            : (assigned && typeof assigned === 'object' ? Object.keys(assigned).map(String) : [String(currentUser?.assignedSite)])
+          
           setAvailableSites((sitesData || []).filter(s => assignedIds.includes(String(s.id))))
         }
 
         // 2. Initial role-based isolation (Site Managers NEVER see other sites)
         if (currentUser.role === 'siteManager') {
-          const assignedIds = Object.keys(currentUser.assignedSites || {})
-
+          const assigned = currentUser?.assignedSites
+          const assignedIds = Array.isArray(assigned) 
+            ? assigned.map(String) 
+            : (assigned && typeof assigned === 'object' ? Object.keys(assigned).map(String) : [String(currentUser?.assignedSite)])
+ 
           history = (history || []).filter(h => assignedIds.includes(String(h.siteId)))
           captures = (captures || []).filter(c => assignedIds.includes(String(c.siteId)))
         }
@@ -95,7 +102,12 @@ function Dashboard({ currentUser }) {
         // 4. Calculate Live Site Performance from Captures + Sites
         const performanceSites = (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'superAdmin')
           ? (sitesData || [])
-          : (sitesData || []).filter(s => Object.keys(currentUser.assignedSites || {}).includes(String(s.id)))
+          : (sitesData || []).filter(site => {
+              const assigned = currentUser?.assignedSites
+              if (Array.isArray(assigned)) return assigned.includes(String(site.id))
+              if (assigned && typeof assigned === 'object') return Object.keys(assigned).includes(String(site.id))
+              return String(site.id) === String(currentUser?.assignedSite)
+            })
 
         const livePerformance = performanceSites.map(site => {
           const siteCaptures = (captures || []).filter(c =>
